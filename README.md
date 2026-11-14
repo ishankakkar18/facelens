@@ -13,7 +13,7 @@ summaries, and a doctor hub (directory, questions, visits, prescriptions).
 | Frontend | React + Vite + Tailwind CSS (deploy: Vercel) |
 | Backend | FastAPI + SQLAlchemy (deploy: Render) |
 | Database | SQLite for dev, MySQL / TiDB for production |
-| AI | Google Gemini (`gemini-2.5-flash`) |
+| AI | Google Gemini (`gemini-3.5-flash`) |
 | Storage | Cloudflare R2 when configured, local `backend/uploads` otherwise |
 | Auth | JWT (email + password) |
 
@@ -97,7 +97,7 @@ Open http://localhost:5173.
 | `SECRET_KEY` | Long random string (Render can generate it) |
 | `DATABASE_URL` | `sqlite:///./facelens.db` or `mysql+pymysql://user:pass@host:4000/facelens?charset=utf8mb4` |
 | `GEMINI_API_KEY` | Required for analysis |
-| `GEMINI_MODEL` | Default `gemini-2.5-flash` |
+| `GEMINI_MODEL` | Default `gemini-3.5-flash` |
 | `CORS_ORIGINS` | Comma-separated allowed origins |
 | `R2_*` | Optional Cloudflare R2 credentials |
 

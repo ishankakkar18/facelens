@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     # AI
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3.5-flash"
 
     # Storage (R2 optional)
     r2_account_id: str = ""
