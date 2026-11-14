@@ -11,11 +11,14 @@ summaries, and a doctor hub (directory, questions, visits, prescriptions).
 | Layer | Tech |
 | --- | --- |
 | Frontend | React + Vite + Tailwind CSS (deploy: Vercel) |
-| Backend | FastAPI + SQLAlchemy (deploy: Render) |
-| Database | SQLite for dev, MySQL / TiDB for production |
+| Backend | Spring Boot 4 (Java 21) + Spring Security + Spring Data JPA (deploy: Render Docker) |
+| Database | H2 file for local dev, MySQL / TiDB for production |
 | AI | Google Gemini (`gemini-3.5-flash`) |
 | Storage | Cloudflare R2 when configured, local `backend/uploads` otherwise |
-| Auth | JWT (email + password) |
+| Auth | JWT (email + password, BCrypt) |
+
+> The original FastAPI implementation is kept in `backend-python/` for reference. The app now
+> uses the Spring Boot backend in `backend/`.
 
 ## Features
 
@@ -32,26 +35,25 @@ summaries, and a doctor hub (directory, questions, visits, prescriptions).
 
 ```
 facelens/
-├── backend/
-│   ├── app/
-│   │   ├── main.py            # FastAPI app, CORS, startup
-│   │   ├── config.py          # env settings
-│   │   ├── database.py        # engine + session
-│   │   ├── models.py          # SQLAlchemy models
-│   │   ├── schemas.py         # Pydantic schemas
-│   │   ├── auth.py            # JWT + password hashing
-│   │   ├── ai.py              # Gemini analysis + change summary
-│   │   ├── services.py        # habit generation + diff
-│   │   ├── storage.py         # R2 / local uploads
-│   │   ├── seed.py            # demo dermatologists
-│   │   └── routers/           # auth, analyze, analyses, tracker, progress, insights, doctors
-│   ├── requirements.txt
-│   └── .env.example
-├── frontend/
-│   ├── src/pages/             # Home, Login, Register, Dashboard, Analyze, Result, ...
-│   ├── src/components/        # Layout, UI, Icons, ProtectedRoute
-│   ├── src/lib/api.js         # typed-ish API client
+├── backend/                      # Spring Boot API (primary)
+│   ├── pom.xml
+│   ├── Dockerfile
 │   ├── .env.example
+│   └── src/main/java/com/facelens/
+│       ├── FaceLensApplication.java
+│       ├── config/               # security, CORS, static uploads, seed data
+│       ├── auth/                 # JWT service, filter, principal
+│       ├── controller/           # auth, analyze, analyses, tracker, progress, insights, doctors
+│       ├── dto/                  # request/response records
+│       ├── entity/               # JPA entities
+│       ├── repository/           # Spring Data repositories
+│       ├── service/              # Gemini, storage, PDF, habits, rate limiting
+│       └── exception/            # API errors
+├── backend-python/               # legacy FastAPI implementation (reference)
+├── frontend/
+│   ├── src/pages/                # Home, Login, Register, Dashboard, Analyze, Result, ...
+│   ├── src/components/           # Layout, UI, Icons, ProtectedRoute
+│   ├── src/lib/api.js            # API client
 │   └── vercel.json
 ├── render.yaml
 └── README.md
@@ -59,23 +61,33 @@ facelens/
 
 ## Local setup
 
+### Prerequisites
+
+- Java 21+ (Java 25 works)
+- Maven 3.9+
+- Node 18+ and npm
+- A free Gemini key: https://aistudio.google.com/app/apikey
+
 ### 1. Backend
 
 ```bash
 cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
 cp .env.example .env
 # edit .env and add GEMINI_API_KEY
-uvicorn app.main:app --reload --port 8000
+mvn spring-boot:run
 ```
 
-- API docs: http://localhost:8000/docs
+- API: http://localhost:8000
 - Health: http://localhost:8000/health
-- SQLite database is created automatically at `backend/facelens.db`.
+- Local database: `backend/data/facelens.mv.db` (created automatically)
+- Local uploads: `backend/uploads/`
 
-Get a free Gemini key: https://aistudio.google.com/app/apikey
+Or build and run the jar:
+
+```bash
+mvn -DskipTests package
+java -jar target/facelens-backend-1.0.0.jar
+```
 
 ### 2. Frontend
 
@@ -90,18 +102,24 @@ Open http://localhost:5173.
 
 ## Environment variables
 
-### Backend (`backend/.env`)
+Spring Boot reads `backend/.env` in local development (via `spring.config.import`). In
+production, set the same values as environment variables.
 
 | Key | Notes |
 | --- | --- |
-| `SECRET_KEY` | Long random string (Render can generate it) |
-| `DATABASE_URL` | `sqlite:///./facelens.db` or `mysql+pymysql://user:pass@host:4000/facelens?charset=utf8mb4` |
+| `SECRET_KEY` | Long random string used to sign JWTs |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Default `10080` |
+| `SPRING_DATASOURCE_URL` | MySQL JDBC URL; leave unset for local H2 |
+| `SPRING_DATASOURCE_USERNAME` | MySQL username |
+| `SPRING_DATASOURCE_PASSWORD` | MySQL password |
 | `GEMINI_API_KEY` | Required for analysis |
 | `GEMINI_MODEL` | Default `gemini-3.5-flash` |
 | `CORS_ORIGINS` | Comma-separated allowed origins |
 | `R2_*` | Optional Cloudflare R2 credentials |
+| `UPLOAD_DIR` | Local upload directory, default `uploads` |
+| `PORT` | Server port, default `8000` |
 
-### Frontend (`frontend/.env`)
+Frontend (`frontend/.env`):
 
 | Key | Notes |
 | --- | --- |
@@ -113,12 +131,12 @@ Open http://localhost:5173.
 
 1. Push this repo to GitHub.
 2. Render → **New → Blueprint** and select the repo (`render.yaml` is detected), **or** create a
-   Web Service manually:
-   - Root directory: `backend`
-   - Build: `pip install -r requirements.txt`
-   - Start: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   Docker Web Service manually:
+   - Dockerfile: `backend/Dockerfile`
+   - Docker context: `backend`
    - Plan: Free
-3. Set env vars: `GEMINI_API_KEY`, `SECRET_KEY`, `DATABASE_URL`, `CORS_ORIGINS`.
+3. Set env vars: `GEMINI_API_KEY`, `SECRET_KEY`, `SPRING_DATASOURCE_URL`,
+   `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `CORS_ORIGINS`.
 4. Free tier sleeps after ~15 min idle; the first request may take ~30s.
 
 ### Frontend on Vercel
@@ -132,11 +150,13 @@ Open http://localhost:5173.
 ### Database on free MySQL
 
 - **TiDB Cloud Serverless** (MySQL-compatible) or **Aiven for MySQL** free tier.
-- Set `DATABASE_URL` on Render, e.g.
-  `mysql+pymysql://user:password@host:4000/facelens?charset=utf8mb4`
-- Tables are created automatically on startup.
+- Set on Render:
+  - `SPRING_DATASOURCE_URL=jdbc:mysql://host:4000/facelens?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC`
+  - `SPRING_DATASOURCE_USERNAME=...`
+  - `SPRING_DATASOURCE_PASSWORD=...`
+- Tables are created automatically on startup (`ddl-auto=update`).
 
-> Note: Render's ephemeral disk means local SQLite/uploads are lost on redeploy. Use MySQL +
+> Render's ephemeral disk means local H2 data and uploads are lost on redeploy. Use MySQL +
 > R2 for production.
 
 ## API summary
@@ -164,8 +184,9 @@ Open http://localhost:5173.
 
 ## Notes & next steps
 
-- The dermatologist directory is **demo data** (marked "sample"). Replace `backend/app/seed.py`
-  with a verified source before launch.
+- The dermatologist directory is **demo data** (marked "sample"). Replace
+  `backend/src/main/java/com/facelens/config/DataInitializer.java` with a verified source before
+  launch.
 - The "doctor answers" are user-entered notes, not real medical replies.
 - Rate limiting is in-memory (6 analyses / 10 min / IP). For production scale, move it to Redis.
-- Add Alembic migrations if you need versioned schema changes.
+- Add Flyway or Liquibase if you need versioned schema migrations.

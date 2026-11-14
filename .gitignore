@@ -17,7 +17,14 @@ frontend/.env
 *.db
 *.sqlite
 *.sqlite3
+*.mv.db
 backend/uploads/
+backend/data/
+backend-python/uploads/
+
+# Java
+backend/target/
+*.class
 
 # Node
 node_modules/
