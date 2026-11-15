@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import { warmUp } from './lib/api'
 import Analyze from './pages/Analyze'
 import Compare from './pages/Compare'
 import Dashboard from './pages/Dashboard'
@@ -16,6 +18,10 @@ import Settings from './pages/Settings'
 import Tracker from './pages/Tracker'
 
 export default function App() {
+  useEffect(() => {
+    warmUp()
+  }, [])
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />

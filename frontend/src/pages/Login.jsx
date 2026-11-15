@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import AuthShell from '../components/AuthShell'
 import { Alert, Spinner } from '../components/UI'
@@ -12,6 +12,16 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [slow, setSlow] = useState(false)
+
+  useEffect(() => {
+    if (!submitting) {
+      setSlow(false)
+      return
+    }
+    const timer = setTimeout(() => setSlow(true), 6000)
+    return () => clearTimeout(timer)
+  }, [submitting])
 
   if (user) return <Navigate to="/dashboard" replace />
 
@@ -78,6 +88,11 @@ export default function Login() {
         <button type="submit" className="btn-primary w-full py-3" disabled={submitting}>
           {submitting ? <Spinner /> : 'Sign in'}
         </button>
+        {submitting && slow && (
+          <p className="text-center text-xs text-amber-700">
+            Waking up the server… the free tier can take up to 60 seconds.
+          </p>
+        )}
       </form>
     </AuthShell>
   )

@@ -69,6 +69,14 @@ export function imageUrl(path) {
 
 export const API_URL = API_BASE
 
+export async function warmUp() {
+  try {
+    await fetch(`${API_BASE}/health`, { cache: 'no-store' })
+  } catch {
+    /* The server may still be waking up; ignore. */
+  }
+}
+
 // --- Auth ---
 export const authApi = {
   register: (email, password) => request('/api/auth/register', { method: 'POST', body: { email, password } }),

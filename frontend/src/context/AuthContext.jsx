@@ -3,6 +3,15 @@ import { authApi, getToken, setToken } from '../lib/api'
 
 const AuthContext = createContext(null)
 
+function withTimeout(promise, milliseconds) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timed out')), milliseconds),
+    ),
+  ])
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -15,10 +24,10 @@ export function AuthProvider({ children }) {
         return
       }
       try {
-        const me = await authApi.me()
+        const me = await withTimeout(authApi.me(), 60000)
         if (active) setUser(me)
-      } catch {
-        setToken(null)
+      } catch (error) {
+        if (error?.status === 401) setToken(null)
       } finally {
         if (active) setLoading(false)
       }
