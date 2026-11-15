@@ -172,6 +172,43 @@ export default function Compare() {
                 </p>
               </div>
             </div>
+            {(data.diff.acne || data.diff.acne_marks || data.diff.hydration) && (
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {data.diff.acne && (
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Acne severity
+                    </p>
+                    <p className="mt-1 text-sm capitalize text-slate-700">
+                      {data.diff.acne.previous_severity || '—'} →{' '}
+                      <strong>{data.diff.acne.current_severity || '—'}</strong>
+                    </p>
+                  </div>
+                )}
+                {data.diff.acne_marks && (
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Acne marks
+                    </p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      {data.diff.acne_marks.previous_type || '—'} →{' '}
+                      <strong>{data.diff.acne_marks.current_type || '—'}</strong>
+                    </p>
+                  </div>
+                )}
+                {data.diff.hydration && (
+                  <div className="rounded-xl bg-slate-50 p-3 sm:col-span-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Hydration
+                    </p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      {data.diff.hydration.previous || '—'} →{' '}
+                      <strong>{data.diff.hydration.current || '—'}</strong>
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="card p-5">

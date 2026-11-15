@@ -2,10 +2,11 @@ const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000').repla
 const TOKEN_KEY = 'facelens_token'
 
 export class ApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, data = null) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.data = data
   }
 }
 
@@ -40,17 +41,18 @@ async function request(path, { method = 'GET', body, form } = {}) {
 
   if (!response.ok) {
     let detail = response.statusText
+    let errorData = null
     try {
-      const data = await response.json()
-      if (Array.isArray(data.detail)) {
-        detail = data.detail.map((d) => d.msg || d).join(', ')
-      } else if (data.detail) {
-        detail = data.detail
+      errorData = await response.json()
+      if (Array.isArray(errorData.detail)) {
+        detail = errorData.detail.map((d) => d.msg || d).join(', ')
+      } else if (errorData.detail) {
+        detail = errorData.detail
       }
     } catch {
       /* ignore parse errors */
     }
-    throw new ApiError(detail || 'Something went wrong.', response.status)
+    throw new ApiError(detail || 'Something went wrong.', response.status, errorData)
   }
 
   if (response.status === 204) return null
@@ -76,9 +78,11 @@ export const authApi = {
 
 // --- Analysis ---
 export const analysisApi = {
-  analyze: (file, { consent = true, save = false } = {}) => {
+  analyze: (files, { consent = true, save = false } = {}) => {
     const form = new FormData()
-    form.append('file', file)
+    form.append('front', files.front)
+    form.append('right', files.right)
+    form.append('left', files.left)
     form.append('consent', String(consent))
     form.append('save', String(save))
     return request('/api/analyze', { method: 'POST', form })

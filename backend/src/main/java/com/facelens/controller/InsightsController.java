@@ -113,6 +113,9 @@ public class InsightsController {
         node.put("id", analysis.getId());
         node.put("created_at", analysis.getCreatedAt());
         node.put("image_url", analysis.getImageUrl());
+        node.put("front_image_url", analysis.getFrontImageUrl());
+        node.put("right_image_url", analysis.getRightImageUrl());
+        node.put("left_image_url", analysis.getLeftImageUrl());
         node.put("result", result);
         return node;
     }
@@ -145,6 +148,29 @@ public class InsightsController {
         texture.put("previous", asText(previousSkin.get("texture")));
         texture.put("current", asText(currentSkin.get("texture")));
         diff.put("skin_texture", texture);
+
+        Map<String, String> hydration = new LinkedHashMap<>();
+        hydration.put("previous", asText(previousSkin.get("hydration")));
+        hydration.put("current", asText(currentSkin.get("hydration")));
+        diff.put("hydration", hydration);
+
+        Map<String, Object> previousAcne = asMap(previousSkin.get("acne"));
+        Map<String, Object> currentAcne = asMap(currentSkin.get("acne"));
+        Map<String, Object> acneDiff = new LinkedHashMap<>();
+        acneDiff.put("previous_severity", asText(previousAcne.get("severity")));
+        acneDiff.put("current_severity", asText(currentAcne.get("severity")));
+        acneDiff.put("previous_types", previousAcne.get("types"));
+        acneDiff.put("current_types", currentAcne.get("types"));
+        diff.put("acne", acneDiff);
+
+        Map<String, Object> previousMarks = asMap(previousSkin.get("acne_marks"));
+        Map<String, Object> currentMarks = asMap(currentSkin.get("acne_marks"));
+        Map<String, Object> marksDiff = new LinkedHashMap<>();
+        marksDiff.put("previous_type", asText(previousMarks.get("type")));
+        marksDiff.put("current_type", asText(currentMarks.get("type")));
+        marksDiff.put("previous_severity", asText(previousMarks.get("severity")));
+        marksDiff.put("current_severity", asText(currentMarks.get("severity")));
+        diff.put("acne_marks", marksDiff);
 
         return diff;
     }

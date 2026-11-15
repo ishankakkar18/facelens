@@ -5,8 +5,8 @@ import { useAuth } from '../context/AuthContext'
 const features = [
   {
     icon: 'camera',
-    title: 'Upload a selfie',
-    body: 'Get a warm, neutral read on your face, skin, and features — no scores, no judgement.',
+    title: 'Capture 3 angles',
+    body: 'Front, right, and left photos are checked first, then analyzed for skin, acne, and marks.',
   },
   {
     icon: 'calendar',
@@ -68,8 +68,9 @@ export default function Home() {
               <span className="text-brand-600">Your progress, tracked.</span>
             </h1>
             <p className="mt-5 max-w-lg text-base leading-7 text-slate-600">
-              Upload a selfie, get a kind and practical skin and grooming report, then follow a daily
-              checklist. Come back anytime to see exactly what changed.
+              Take a front, right-side, and left-side photo. We check all three angles, then give
+              you a kind and practical skin, acne, and grooming report — and a daily checklist to
+              follow.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to={user ? '/analyze' : '/register'} className="btn-primary px-5 py-3">

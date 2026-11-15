@@ -111,6 +111,9 @@ public class AnalysisController {
         return new AnalysisDto(
                 analysis.getId(),
                 analysis.getImageUrl(),
+                analysis.getFrontImageUrl(),
+                analysis.getRightImageUrl(),
+                analysis.getLeftImageUrl(),
                 parseResult(analysis),
                 analysis.getCreatedAt()
         );

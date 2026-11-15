@@ -4,6 +4,7 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import com.facelens.exception.ApiException;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -69,6 +70,105 @@ public class GeminiService {
             {"valid_face": false, "error": "reason"}
             """;
 
+    private static final String MULTI_PHOTO_PROMPT = """
+            You are FaceLens, a careful, non-judgmental skin and grooming analyst.
+            You receive exactly 3 photos of the same person:
+            PHOTO 1 = FRONT face
+            PHOTO 2 = RIGHT side of the face (the person's right side)
+            PHOTO 3 = LEFT side of the face (the person's left side)
+
+            STEP 1 — validate the photos. Reject if:
+            - any photo has no clear human face, is too blurry/dark, or the face is covered by a mask, sunglasses, or hair
+            - PHOTO 1 is not front-facing
+            - PHOTO 2 does not show the right side/profile
+            - PHOTO 3 does not show the left side/profile
+            - any two photos are duplicates or show the same angle
+            - the three photos appear to be different people
+
+            Return "valid_photos": {"front": true/false, "right": true/false, "left": true/false}
+            and a short "photo_notes" entry for each photo. If invalid, set "validation_error"
+            explaining what to retake, and DO NOT analyze the skin.
+
+            STEP 2 — if all three are valid, analyze the skin in more detail using simple
+            medical/clinical terms:
+            - acne: severity (none/mild/moderate/severe), types (comedonal, closed comedones,
+              open comedones, papules, pustules, nodules/cystic), locations, inflammation
+            - acne marks: type (PIH / post-inflammatory hyperpigmentation, PIE /
+              post-inflammatory erythema, mixed, none), severity, locations
+            - pores, hydration, texture, tone, erythema, oiliness
+            - medical_notes: 2-4 sentences in plain clinical language
+            - suggestions.ingredients: evidence-informed OTC options with how to use and
+              cautions (for example salicylic acid, benzoyl peroxide, adapalene, niacinamide,
+              azelaic acid, alpha arbutin, vitamin C, SPF 30+). Mention patch testing and
+              starting slowly.
+            - suggestions.skincare, grooming, lifestyle, professional
+
+            Rules:
+            - Never diagnose a disease. Say "visible signs consistent with..." instead of
+              "you have acne vulgaris".
+            - Never rate attractiveness, and do not mention weight, ethnicity, or sex.
+            - Be specific and practical. Mention when to see a dermatologist (painful or cystic
+              acne, scarring, sudden severe changes).
+            - Return ONLY valid JSON matching the requested shape.
+
+            Return JSON with exactly these keys:
+            {
+              "valid_photos": {"front": true, "right": true, "left": true},
+              "validation_error": null,
+              "photo_notes": {"front": "...", "right": "...", "left": "..."},
+              "overall_description": "2-4 warm, descriptive sentences about the face",
+              "estimated_age_range": "e.g. 25-32 (an estimate, not a fact)",
+              "facial_shape": "e.g. oval, round, square, heart, diamond, oblong",
+              "symmetry_notes": "neutral observations about facial balance",
+              "skin": {
+                "tone": "neutral description",
+                "texture": "neutral description",
+                "hydration": "neutral description",
+                "pores": "neutral description",
+                "oiliness": "neutral description",
+                "erythema": "neutral description",
+                "concerns": ["short visible concerns"],
+                "acne": {
+                  "severity": "none|mild|moderate|severe",
+                  "types": ["comedonal", "papules", "pustules", "nodules/cystic"],
+                  "locations": ["forehead", "cheeks", "chin", "jawline"],
+                  "inflammation": "short description"
+                },
+                "acne_marks": {
+                  "type": "PIH|PIE|mixed|none",
+                  "severity": "none|mild|moderate|severe",
+                  "locations": ["cheeks", "chin"]
+                }
+              },
+              "features": {
+                "eyes": "short neutral note",
+                "nose": "short neutral note",
+                "lips": "short neutral note",
+                "jawline": "short neutral note"
+              },
+              "strengths": ["3-5 genuine strengths"],
+              "areas_to_improve": ["2-4 gentle, actionable focus areas"],
+              "suggestions": {
+                "skincare": ["3-5 specific steps/product types"],
+                "ingredients": ["3-6 ingredient/product suggestions with how to use"],
+                "grooming": ["2-4 specific grooming ideas"],
+                "lifestyle": ["2-4 habits: sleep, hydration, sun, posture, stress"],
+                "professional": ["when/why to see a dermatologist, if relevant; empty array if not"]
+              },
+              "medical_notes": "2-4 sentences in plain clinical language",
+              "disclaimer": "This is a general wellness analysis, not medical advice."
+            }
+
+            If any photo is invalid, return:
+            {
+              "valid_photos": {"front": true, "right": false, "left": true},
+              "validation_error": "The right-side photo shows a front view. Please turn your head and show your right profile.",
+              "photo_notes": {"front": "ok", "right": "front-facing, not a right profile", "left": "ok"},
+              "skin": null,
+              "overall_description": null
+            }
+            """;
+
     private static final String CHANGE_PROMPT = """
             Compare two FaceLens skin/grooming reports for the same person:
             - PREVIOUS (older)
@@ -130,6 +230,51 @@ public class GeminiService {
 
         String text = callGemini(payload);
         return parseJsonObject(text);
+    }
+
+    public Map<String, Object> analyzeFace(
+            byte[] front,
+            String frontMime,
+            byte[] right,
+            String rightMime,
+            byte[] left,
+            String leftMime
+    ) {
+        if (apiKey.isBlank()) {
+            throw new ApiException(502,
+                    "GEMINI_API_KEY is not configured. Copy backend/.env.example to backend/.env and add your key.");
+        }
+
+        List<Map<String, Object>> parts = new ArrayList<>();
+        parts.add(Map.of("text", MULTI_PHOTO_PROMPT));
+        addPhoto(parts, "PHOTO 1 — FRONT FACE", front, frontMime);
+        addPhoto(parts, "PHOTO 2 — RIGHT SIDE OF FACE", right, rightMime);
+        addPhoto(parts, "PHOTO 3 — LEFT SIDE OF FACE", left, leftMime);
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("system_instruction", Map.of("parts", List.of(Map.of("text", SYSTEM_PROMPT))));
+        payload.put("contents", List.of(Map.of("role", "user", "parts", parts)));
+        payload.put("generationConfig", Map.of(
+                "temperature", 0.3,
+                "responseMimeType", "application/json",
+                "maxOutputTokens", 4096
+        ));
+
+        String text = callGemini(payload);
+        return parseJsonObject(text);
+    }
+
+    private static void addPhoto(
+            List<Map<String, Object>> parts,
+            String label,
+            byte[] bytes,
+            String mimeType
+    ) {
+        parts.add(Map.of("text", label));
+        parts.add(Map.of("inline_data", Map.of(
+                "mime_type", mimeType,
+                "data", Base64.getEncoder().encodeToString(bytes)
+        )));
     }
 
     public Map<String, Object> summarizeChanges(Map<String, Object> previous, Map<String, Object> current) {

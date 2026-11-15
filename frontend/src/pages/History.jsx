@@ -126,9 +126,9 @@ export default function History() {
                   {isSelected && <Icon name="check" className="h-4 w-4" />}
                 </button>
 
-                {item.image_url ? (
+                {item.front_image_url || item.image_url ? (
                   <img
-                    src={imageUrl(item.image_url)}
+                    src={imageUrl(item.front_image_url || item.image_url)}
                     alt="Analysis"
                     className="h-16 w-16 shrink-0 rounded-xl object-cover ring-1 ring-slate-100"
                   />

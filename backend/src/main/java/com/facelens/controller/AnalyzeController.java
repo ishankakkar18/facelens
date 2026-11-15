@@ -6,6 +6,7 @@ import com.facelens.dto.AnalysisDtos.AnalyzeResponse;
 import com.facelens.entity.Analysis;
 import com.facelens.entity.Consent;
 import com.facelens.exception.ApiException;
+import com.facelens.exception.PhotoValidationException;
 import com.facelens.repository.AnalysisRepository;
 import com.facelens.repository.ConsentRepository;
 import com.facelens.service.GeminiService;
@@ -16,6 +17,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.http.MediaType;
@@ -30,6 +33,7 @@ public class AnalyzeController {
 
     private static final Set<String> ALLOWED_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
     private static final long MAX_BYTES = 8L * 1024 * 1024;
+    private static final List<String> ANGLES = List.of("front", "right", "left");
 
     private final GeminiService geminiService;
     private final StorageService storageService;
@@ -59,7 +63,9 @@ public class AnalyzeController {
 
     @PostMapping(value = "/api/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public AnalyzeResponse analyze(
-            @RequestParam("file") MultipartFile file,
+            @RequestParam("front") MultipartFile front,
+            @RequestParam("right") MultipartFile right,
+            @RequestParam("left") MultipartFile left,
             @RequestParam("consent") boolean consent,
             @RequestParam(value = "save", defaultValue = "false") boolean save,
             HttpServletRequest request,
@@ -74,47 +80,98 @@ public class AnalyzeController {
         if (save && principal == null) {
             throw new ApiException(401, "Log in to save analyses to your history.");
         }
-        if (file == null || file.isEmpty()) {
-            throw new ApiException(400, "The uploaded file is empty.");
-        }
-        String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
-            throw new ApiException(400, "Please upload a JPG, PNG, or WEBP image.");
-        }
-        if (file.getSize() > MAX_BYTES) {
-            throw new ApiException(400, "Image is too large. Maximum size is 8 MB.");
-        }
+
+        ImageData frontImage = readImage(front, "Front");
+        ImageData rightImage = readImage(right, "Right-side");
+        ImageData leftImage = readImage(left, "Left-side");
 
         Consent record = new Consent();
         record.setUserId(principal == null ? null : principal.getId());
         record.setIpHash(hashIp(ip));
         consentRepository.save(record);
 
-        byte[] bytes = file.getBytes();
-        Map<String, Object> result = geminiService.analyze(bytes, contentType);
+        Map<String, Object> result = geminiService.analyzeFace(
+                frontImage.bytes(), frontImage.contentType(),
+                rightImage.bytes(), rightImage.contentType(),
+                leftImage.bytes(), leftImage.contentType()
+        );
 
-        Object validFace = result.get("valid_face");
-        if (Boolean.FALSE.equals(validFace)) {
-            Object error = result.get("error");
-            throw new ApiException(422,
-                    error == null ? "No clear, front-facing face was detected. Try another selfie." : error.toString());
-        }
+        validatePhotoAngles(result);
 
         Long analysisId = null;
-        String imageUrl = null;
+        String frontUrl = null;
+        String rightUrl = null;
+        String leftUrl = null;
 
         if (save && principal != null) {
-            imageUrl = storageService.upload(bytes, contentType);
+            frontUrl = storageService.upload(frontImage.bytes(), frontImage.contentType());
+            rightUrl = storageService.upload(rightImage.bytes(), rightImage.contentType());
+            leftUrl = storageService.upload(leftImage.bytes(), leftImage.contentType());
+
             Analysis analysis = new Analysis();
             analysis.setUserId(principal.getId());
-            analysis.setImageUrl(imageUrl);
+            analysis.setImageUrl(frontUrl);
+            analysis.setFrontImageUrl(frontUrl);
+            analysis.setRightImageUrl(rightUrl);
+            analysis.setLeftImageUrl(leftUrl);
             analysis.setResultJson(objectMapper.writeValueAsString(result));
             analysisRepository.save(analysis);
             analysisId = analysis.getId();
             habitService.createFromAnalysis(principal.getId(), analysis.getId(), result);
         }
 
-        return new AnalyzeResponse(analysisId, imageUrl, result);
+        return new AnalyzeResponse(analysisId, frontUrl, frontUrl, rightUrl, leftUrl, result);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void validatePhotoAngles(Map<String, Object> result) {
+        Object validValue = result.get("valid_photos");
+        if (!(validValue instanceof Map<?, ?> validMap)) {
+            if (Boolean.FALSE.equals(result.get("valid_face"))) {
+                throw new ApiException(422,
+                        "No clear, front-facing face was detected. Try another set of photos.");
+            }
+            return;
+        }
+
+        Map<String, Object> photoNotes = result.get("photo_notes") instanceof Map<?, ?> notes
+                ? (Map<String, Object>) notes
+                : Map.of();
+
+        Map<String, String> errors = new LinkedHashMap<>();
+        for (String angle : ANGLES) {
+            if (Boolean.FALSE.equals(validMap.get(angle))) {
+                Object note = photoNotes.get(angle);
+                errors.put(angle, note == null
+                        ? "This photo does not match the requested angle. Please retake it."
+                        : note.toString());
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            Object message = result.get("validation_error");
+            throw new PhotoValidationException(
+                    message == null ? "One or more photos are not correct. Please retake them." : message.toString(),
+                    errors
+            );
+        }
+    }
+
+    private static ImageData readImage(MultipartFile file, String label) throws Exception {
+        if (file == null || file.isEmpty()) {
+            throw new ApiException(400, label + " photo is missing.");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
+            throw new ApiException(400, label + " photo must be a JPG, PNG, or WEBP image.");
+        }
+        if (file.getSize() > MAX_BYTES) {
+            throw new ApiException(400, label + " photo is too large. Maximum size is 8 MB.");
+        }
+        return new ImageData(file.getBytes(), contentType);
+    }
+
+    private record ImageData(byte[] bytes, String contentType) {
     }
 
     private static String clientIp(HttpServletRequest request) {

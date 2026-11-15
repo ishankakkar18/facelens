@@ -1,5 +1,7 @@
 package com.facelens.exception;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +23,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorBody> handleApi(ApiException exception) {
         return ResponseEntity.status(exception.getStatus()).body(new ErrorBody(exception.getMessage()));
+    }
+
+    @ExceptionHandler(PhotoValidationException.class)
+    public ResponseEntity<Map<String, Object>> handlePhotoValidation(PhotoValidationException exception) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("detail", exception.getMessage());
+        body.put("photo_errors", exception.getPhotoErrors());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

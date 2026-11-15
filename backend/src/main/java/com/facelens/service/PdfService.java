@@ -57,8 +57,42 @@ public class PdfService {
                 }
             }
 
-            Map<String, Object> features = map(result, "features");
-            if (!features.isEmpty()) {
+            Map<String, Object> acne = map(skin, "acne");
+            if (!acne.isEmpty()) {
+                heading(document, "Acne (visible signs)", headingFont);
+                addFact(document, "Severity", text(acne, "severity"), bodyFont);
+                addFact(document, "Inflammation", text(acne, "inflammation"), bodyFont);
+                List<?> acneTypes = list(acne, "types");
+                if (!acneTypes.isEmpty()) {
+                    paragraph(document, "Types:", bodyFont);
+                    bullets(document, acneTypes, bodyFont);
+                }
+                List<?> acneLocations = list(acne, "locations");
+                if (!acneLocations.isEmpty()) {
+                    paragraph(document, "Locations:", bodyFont);
+                    bullets(document, acneLocations, bodyFont);
+                }
+            }
+
+            Map<String, Object> acneMarks = map(skin, "acne_marks");
+            if (!acneMarks.isEmpty()) {
+                heading(document, "Acne marks", headingFont);
+                addFact(document, "Type", text(acneMarks, "type"), bodyFont);
+                addFact(document, "Severity", text(acneMarks, "severity"), bodyFont);
+                List<?> markLocations = list(acneMarks, "locations");
+                if (!markLocations.isEmpty()) {
+                    paragraph(document, "Locations:", bodyFont);
+                    bullets(document, markLocations, bodyFont);
+                }
+            }
+
+            String medicalNotes = text(result, "medical_notes");
+            if (medicalNotes != null && !medicalNotes.isBlank()) {
+                heading(document, "Clinical notes", headingFont);
+                paragraph(document, medicalNotes, bodyFont);
+            }
+
+            Map<String, Object> features = map(result, "features");            if (!features.isEmpty()) {
                 heading(document, "Features", headingFont);
                 for (Map.Entry<String, Object> entry : features.entrySet()) {
                     if (entry.getValue() != null) {
@@ -72,6 +106,7 @@ public class PdfService {
 
             Map<String, Object> suggestions = map(result, "suggestions");
             addListSection(document, "Skincare", list(suggestions, "skincare"), headingFont, bodyFont);
+            addListSection(document, "What to use (ingredients)", list(suggestions, "ingredients"), headingFont, bodyFont);
             addListSection(document, "Grooming", list(suggestions, "grooming"), headingFont, bodyFont);
             addListSection(document, "Lifestyle", list(suggestions, "lifestyle"), headingFont, bodyFont);
             addListSection(document, "When to see a professional", list(suggestions, "professional"), headingFont, bodyFont);

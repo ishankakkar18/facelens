@@ -22,7 +22,7 @@ summaries, and a doctor hub (directory, questions, visits, prescriptions).
 
 ## Features
 
-- **Analyze** — upload a selfie, get a structured report (skin, features, strengths, focus areas).
+- **Analyze** — capture or upload 3 photos (front, right side, left side), validate the angles, then get a detailed skin, acne, and acne-marks report.
 - **Daily tracker** — AI suggestions become habits automatically; tick them off, build a streak.
 - **Custom habits** — add, pause, or delete your own routine steps.
 - **Progress photos** — visual timeline with optional AI analysis per photo.

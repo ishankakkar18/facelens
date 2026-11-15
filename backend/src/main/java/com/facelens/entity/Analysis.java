@@ -17,6 +17,15 @@ public class Analysis {
     @Column(name = "image_url", length = 1024)
     private String imageUrl;
 
+    @Column(name = "front_image_url", length = 1024)
+    private String frontImageUrl;
+
+    @Column(name = "right_image_url", length = 1024)
+    private String rightImageUrl;
+
+    @Column(name = "left_image_url", length = 1024)
+    private String leftImageUrl;
+
     @Lob
     @Column(name = "result_json", nullable = false)
     private String resultJson;
@@ -53,6 +62,30 @@ public class Analysis {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public String getFrontImageUrl() {
+        return frontImageUrl;
+    }
+
+    public void setFrontImageUrl(String frontImageUrl) {
+        this.frontImageUrl = frontImageUrl;
+    }
+
+    public String getRightImageUrl() {
+        return rightImageUrl;
+    }
+
+    public void setRightImageUrl(String rightImageUrl) {
+        this.rightImageUrl = rightImageUrl;
+    }
+
+    public String getLeftImageUrl() {
+        return leftImageUrl;
+    }
+
+    public void setLeftImageUrl(String leftImageUrl) {
+        this.leftImageUrl = leftImageUrl;
     }
 
     public String getResultJson() {
