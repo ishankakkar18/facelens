@@ -168,6 +168,12 @@ export default function Progress() {
           />
         )}
 
+        {!loading && totalCompleted === 0 && (
+          <p className="mt-3 text-xs text-slate-500">
+            Complete a habit in the tracker to light up your map.
+          </p>
+        )}
+
         {selectedDay && (
           <div className="mt-4 rounded-xl bg-slate-50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">

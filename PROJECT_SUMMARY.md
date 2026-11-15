@@ -18,12 +18,13 @@ prescriptions.
 | Frontend (Vercel) | https://facelens.vercel.app |
 | Backend (Render) | https://facelens-api.onrender.com |
 | Health check | https://facelens-api.onrender.com/health |
+| Database | TiDB Cloud Serverless MySQL (AWS Oregon, persistent) |
 | GitHub repository | https://github.com/ishankakkar18/facelens |
 
 **Demo account**
 
 ```
-Email:    demo@facelens.app
+Email:    heatprod@facelens.app
 Password: password123
 ```
 
@@ -93,7 +94,7 @@ Password: password123
                               ┌────────────────────────┼────────────────────────┐
                               │                        │                        │
                      ┌────────▼────────┐      ┌────────▼────────┐      ┌────────▼────────┐
-                     │ H2 / MySQL      │      │ Cloudflare R2   │      │ Google Gemini   │
+                     │ TiDB MySQL      │      │ Cloudflare R2   │      │ Google Gemini   │
                      │ users, analyses │      │ or local uploads│      │ 3.5 Flash       │
                      │ habits, logs,   │      │                 │      │                 │
                      │ photos, doctors │      │                 │      │                 │
@@ -113,7 +114,7 @@ Password: password123
 | PDF | OpenPDF 3.0.5 |
 | Storage | Local `uploads/` or Cloudflare R2 (AWS SDK v2) |
 | Database (local) | H2 file, MySQL compatibility mode |
-| Database (prod) | MySQL / TiDB via `SPRING_DATASOURCE_*` |
+| Database (prod) | TiDB Cloud Serverless (MySQL 8 compatible) via `SPRING_DATASOURCE_*` |
 | Frontend deploy | Vercel (Hobby) |
 | Backend deploy | Render Docker web service (Free) |
 | Legacy backend | FastAPI implementation retained in `backend-python/` |
@@ -253,7 +254,7 @@ npm run dev
   - `GEMINI_API_KEY`
   - `GEMINI_MODEL=gemini-3.5-flash`
   - `CORS_ORIGINS=https://facelens.vercel.app,http://localhost:5173,http://127.0.0.1:5173`
-- Current database: **H2 (ephemeral)** — resets on redeploy/restart
+- Current database: **TiDB Cloud Serverless MySQL** (persistent, AWS Oregon)
 - Free instance sleeps after ~15 minutes; first request may take ~50 seconds
 
 ### Vercel (frontend)
@@ -291,6 +292,12 @@ The deployed system was tested end-to-end:
 - 3-photo validation: `422` with per-angle `photo_errors` when photos are duplicated
 - Result page rendering: acne severity, acne marks, hydration, pores, clinical notes, and
   "What to use" ingredients verified with a mock report
+- Activity heatmap: 31-day range returned correct counts; clicking a day displayed completed
+  and not-completed tasks
+- Keep-alive GitHub Actions workflow: completed successfully
+- Production frontend bundle: main JS 195.75 kB (63.07 kB gzip) with lazy-loaded route chunks
+- **TiDB Cloud Serverless MySQL**: all 9 tables created automatically; 11 habits and 15 logs
+  restored; data now persists across Render deploys
 - Local backend tests also covered: habits, logs, streak, doctors, questions, visits,
   progress photos, PDF export, and AI change insights
 
@@ -298,9 +305,10 @@ The deployed system was tested end-to-end:
 
 ## Known limitations
 
-1. **Ephemeral production database** — Render runs H2 in the container unless MySQL is configured.
-   Data resets on every deploy/restart.
+1. **TiDB Serverless free quota** — 5 GiB row storage and 50M request units per month; the
+   instance is throttled if the free quota is exhausted.
 2. **Free-tier cold starts** — Render sleeps after inactivity; the first request can be slow.
+   A GitHub Actions workflow pings `/health` every 10 minutes to keep it warm.
 3. **Demo dermatologist directory** — seeded sample data marked "(sample)"; replace with a
    verified source before real use.
 4. **Doctor answers are user-entered notes** — not real medical replies.
@@ -312,7 +320,7 @@ The deployed system was tested end-to-end:
 
 ## Next steps
 
-- [ ] Connect TiDB Cloud Serverless or Aiven MySQL and set `SPRING_DATASOURCE_*` on Render
+- [x] Connect TiDB Cloud Serverless and set `SPRING_DATASOURCE_*` on Render
 - [ ] Replace sample dermatologist data with a verified directory
 - [ ] Add Flyway or Liquibase migrations
 - [ ] Add backend integration tests and frontend component tests

@@ -12,7 +12,7 @@ summaries, and a doctor hub (directory, questions, visits, prescriptions).
 | --- | --- |
 | Frontend | React + Vite + Tailwind CSS (deploy: Vercel) |
 | Backend | Spring Boot 4 (Java 21) + Spring Security + Spring Data JPA (deploy: Render Docker) |
-| Database | H2 file for local dev, MySQL / TiDB for production |
+| Database | H2 file for local dev, TiDB Cloud Serverless MySQL for production |
 | AI | Google Gemini (`gemini-3.5-flash`) |
 | Storage | Cloudflare R2 when configured, local `backend/uploads` otherwise |
 | Auth | JWT (email + password, BCrypt) |
@@ -149,15 +149,15 @@ Frontend (`frontend/.env`):
 
 ### Database on free MySQL
 
-- **TiDB Cloud Serverless** (MySQL-compatible) or **Aiven for MySQL** free tier.
-- Set on Render:
-  - `SPRING_DATASOURCE_URL=jdbc:mysql://host:4000/facelens?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC`
-  - `SPRING_DATASOURCE_USERNAME=...`
-  - `SPRING_DATASOURCE_PASSWORD=...`
-- Tables are created automatically on startup (`ddl-auto=update`).
+The deployed backend currently uses **TiDB Cloud Serverless** (AWS Oregon, same region as Render)
+with a persistent MySQL-compatible database. The connection is configured on Render via
+`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD`.
 
-> Render's ephemeral disk means local H2 data and uploads are lost on redeploy. Use MySQL +
-> R2 for production.
+To use a different MySQL provider, set the same three variables on Render. Tables are created
+automatically on startup (`ddl-auto=update`).
+
+> Production data now persists across deploys. Local uploaded images still live on Render's
+> ephemeral disk unless Cloudflare R2 is configured.
 
 ## API summary
 
