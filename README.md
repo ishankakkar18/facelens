@@ -157,6 +157,10 @@ with a persistent MySQL-compatible database. The connection is configured on Ren
 To use a different MySQL provider, set the same three variables on Render. Tables are created
 automatically on startup (`ddl-auto=update`).
 
+> If you are upgrading an existing MySQL/TiDB database from an earlier build, run
+> `backend/migrations/001-widen-text-columns.sql` once. It widens `analyses.result_json` to
+> `LONGTEXT` and `doctor_questions.question` to `TEXT`.
+
 > Production data now persists across deploys. Local uploaded images still live on Render's
 > ephemeral disk unless Cloudflare R2 is configured.
 

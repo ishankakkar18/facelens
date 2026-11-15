@@ -302,6 +302,8 @@ The deployed system was tested end-to-end:
 - Production frontend bundle: main JS 195.75 kB (63.07 kB gzip) with lazy-loaded route chunks
 - **TiDB Cloud Serverless MySQL**: all 9 tables created automatically; 11 habits and 15 logs
   restored; data now persists across Render deploys
+- **MySQL schema fix**: `analyses.result_json` widened from `tinytext` to `longtext`;
+  a 100 KB JSON insert was verified successfully
 - Local backend tests also covered: habits, logs, streak, doctors, questions, visits,
   progress photos, PDF export, and AI change insights
 
