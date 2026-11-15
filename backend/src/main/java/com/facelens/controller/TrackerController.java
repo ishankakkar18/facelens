@@ -6,6 +6,7 @@ import com.facelens.dto.TrackerDtos.HabitDto;
 import com.facelens.dto.TrackerDtos.HabitLogDto;
 import com.facelens.dto.TrackerDtos.HabitLogRequest;
 import com.facelens.dto.TrackerDtos.HabitUpdateRequest;
+import com.facelens.dto.TrackerDtos.HeatmapDayDto;
 import com.facelens.dto.TrackerDtos.TodayHabitDto;
 import com.facelens.dto.TrackerDtos.TrackerSummaryDto;
 import com.facelens.entity.Habit;
@@ -15,6 +16,7 @@ import com.facelens.repository.HabitLogRepository;
 import com.facelens.repository.HabitRepository;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -229,6 +231,52 @@ public class TrackerController {
                 completionRate,
                 streak
         );
+    }
+
+    @GetMapping("/heatmap")
+    public List<HeatmapDayDto> heatmap(
+            @RequestParam(name = "from", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(name = "to", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        LocalDate today = LocalDate.now();
+        LocalDate start = from == null ? today.minusDays(364) : from;
+        LocalDate end = to == null ? today : to;
+        if (end.isBefore(start)) {
+            throw new ApiException(400, "The end date must be after the start date.");
+        }
+
+        List<Habit> habits = habitRepository.findByUserIdOrderByCreatedAtAscIdAsc(principal.getId());
+        List<LocalDate> creationDates = new ArrayList<>();
+        for (Habit habit : habits) {
+            creationDates.add(habit.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDate());
+        }
+        creationDates.sort(LocalDate::compareTo);
+
+        List<HabitLog> logs = habitLogRepository.findByUserIdAndLogDateBetween(principal.getId(), start, end);
+        Map<LocalDate, Integer> completedByDay = new HashMap<>();
+        for (HabitLog log : logs) {
+            if (log.isCompleted()) {
+                completedByDay.merge(log.getLogDate(), 1, Integer::sum);
+            }
+        }
+
+        List<HeatmapDayDto> days = new ArrayList<>();
+        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
+            int total = 0;
+            for (LocalDate creation : creationDates) {
+                if (creation.isAfter(day)) {
+                    break;
+                }
+                total++;
+            }
+            int completed = completedByDay.getOrDefault(day, 0);
+            double ratio = total == 0 ? 0.0 : Math.round((completed * 1000.0) / total) / 1000.0;
+            days.add(new HeatmapDayDto(day, completed, total, ratio));
+        }
+        return days;
     }
 
     private Habit ownedHabit(Long id, UserPrincipal principal) {

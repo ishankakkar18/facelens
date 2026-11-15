@@ -107,7 +107,7 @@ export default function Layout() {
       )}
 
       <main className="px-4 pb-24 pt-5 sm:px-6 lg:ml-64 lg:px-10 lg:pb-10 lg:pt-8">
-        <div className="mx-auto max-w-5xl">
+        <div key={location.pathname} className="mx-auto max-w-5xl animate-fade-in">
           <Outlet />
         </div>
       </main>

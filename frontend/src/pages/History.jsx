@@ -130,6 +130,8 @@ export default function History() {
                   <img
                     src={imageUrl(item.front_image_url || item.image_url)}
                     alt="Analysis"
+                    loading="lazy"
+                    decoding="async"
                     className="h-16 w-16 shrink-0 rounded-xl object-cover ring-1 ring-slate-100"
                   />
                 ) : (

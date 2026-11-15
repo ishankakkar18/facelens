@@ -49,7 +49,13 @@ function PhotoStrip({ previews }) {
       {photos.map((photo) => (
         <div key={photo.label} className="overflow-hidden rounded-xl bg-slate-100">
           {photo.src ? (
-            <img src={photo.src} alt={`${photo.label} view`} className="h-32 w-full object-cover" />
+            <img
+              src={photo.src}
+              alt={`${photo.label} view`}
+              loading="lazy"
+              decoding="async"
+              className="h-32 w-full object-cover"
+            />
           ) : (
             <div className="flex h-32 items-center justify-center text-slate-400">
               <Icon name="user" className="h-8 w-8" />

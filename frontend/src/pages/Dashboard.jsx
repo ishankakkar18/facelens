@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import ActivityHeatmap from '../components/ActivityHeatmap'
 import Icon from '../components/Icons'
 import { Alert, Badge, EmptyState, PageHeader, Spinner } from '../components/UI'
 import { useAuth } from '../context/AuthContext'
 import { analysisApi, insightsApi, trackerApi } from '../lib/api'
-import { formatDate, greeting } from '../lib/format'
+import { formatDate, greeting, isoDaysAgo, todayISO } from '../lib/format'
 
 function ProgressRing({ value }) {
   const radius = 34
@@ -37,6 +38,7 @@ export default function Dashboard() {
   const { user } = useAuth()
   const [summary, setSummary] = useState(null)
   const [changes, setChanges] = useState(null)
+  const [heatmap, setHeatmap] = useState([])
   const [changesNote, setChangesNote] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -53,12 +55,14 @@ export default function Dashboard() {
       setLoading(true)
       setError('')
       try {
-        const [data, analysisPage] = await Promise.all([
+        const [data, analysisPage, heatmapDays] = await Promise.all([
           trackerApi.summary(),
           analysisApi.list(2, 0).catch(() => ({ items: [], total: 0 })),
+          trackerApi.heatmap(isoDaysAgo(83), todayISO()).catch(() => []),
         ])
         if (!active) return
         setSummary(data)
+        setHeatmap(heatmapDays)
         if (analysisPage.total >= 2) {
           try {
             const insight = await insightsApi.changes()
@@ -248,6 +252,24 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="card mt-6 p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold text-slate-900">Your activity</h2>
+            <p className="text-xs text-slate-500">Last 12 weeks of completed tasks</p>
+          </div>
+          <Link to="/progress" className="text-xs font-semibold text-brand-600 hover:text-brand-700">
+            Open calendar
+          </Link>
+        </div>
+        <ActivityHeatmap
+          days={heatmap}
+          limitWeeks={12}
+          showMonths={false}
+          showLegend={false}
+        />
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">

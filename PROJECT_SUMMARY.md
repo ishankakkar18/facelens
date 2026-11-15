@@ -48,6 +48,8 @@ Password: password123
 - Custom habits: add, pause/resume, delete
 
 ### Progress
+- **12-month activity heatmap** (GitHub/LeetCode style) with color intensity based on completed tasks
+- **Click any day** to see the completed and not-completed tasks for that date
 - Visual timeline of progress photos
 - Optional AI analysis for each photo
 - Notes per photo
@@ -178,6 +180,16 @@ Password: password123
 | PATCH / DELETE | `/api/doctors/visits/{id}` |
 
 ---
+
+## Performance & free-tier behavior
+
+- Route-level code splitting with `React.lazy` (main bundle ~196 kB, ~63 kB gzip)
+- Client-side image compression before upload (max 1400 px, JPEG ~85%)
+- Preconnect / DNS-prefetch to the Render API and Google Fonts
+- Skeleton loaders for dashboard, tracker, and progress views
+- GitHub Actions workflow pings `/health` every 10 minutes to keep the free Render instance warm
+- Warm-up ping on app load; auth boot has a 60 s timeout; login/register show a
+  "waking up the server" hint after 6 s
 
 ## Local development
 

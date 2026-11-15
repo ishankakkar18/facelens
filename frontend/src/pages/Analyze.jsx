@@ -4,6 +4,7 @@ import CameraCapture from '../components/CameraCapture'
 import Icon from '../components/Icons'
 import { Alert, PageHeader, Spinner } from '../components/UI'
 import { analysisApi } from '../lib/api'
+import { compressImage } from '../lib/image'
 
 const MAX_BYTES = 8 * 1024 * 1024
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
@@ -35,7 +36,7 @@ export default function Analyze() {
     return () => clearTimeout(timer)
   }, [submitting])
 
-  function setPhoto(key, file) {
+  async function setPhoto(key, file) {
     if (!file) return
     setError('')
     if (!ALLOWED.includes(file.type)) {
@@ -46,9 +47,10 @@ export default function Analyze() {
       setError('Each photo must be smaller than 8 MB.')
       return
     }
+    const compressed = await compressImage(file)
     setPhotos((current) => {
       if (current[key]?.preview) URL.revokeObjectURL(current[key].preview)
-      return { ...current, [key]: { file, preview: URL.createObjectURL(file) } }
+      return { ...current, [key]: { file: compressed, preview: URL.createObjectURL(compressed) } }
     })
     setSlotErrors((current) => ({ ...current, [key]: undefined }))
   }
@@ -112,6 +114,24 @@ export default function Analyze() {
         title="Analyze 3 photos"
         subtitle="We check the angles first, then analyze skin, acne, and marks in detail."
       />
+
+      <div className="mb-5 grid gap-2 sm:grid-cols-3">
+        {[
+          { number: '1', title: 'Capture 3 angles', text: 'Front, right side, left side' },
+          { number: '2', title: 'Angle check', text: 'Wrong or duplicate photos are rejected' },
+          { number: '3', title: 'Skin analysis', text: 'Acne, marks, and what to use' },
+        ].map((step) => (
+          <div key={step.number} className="card flex items-center gap-3 p-3">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
+              {step.number}
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">{step.title}</p>
+              <p className="text-xs text-slate-500">{step.text}</p>
+            </div>
+          </div>
+        ))}
+      </div>
 
       <form onSubmit={handleSubmit}>
         <div className="grid gap-4 md:grid-cols-3">

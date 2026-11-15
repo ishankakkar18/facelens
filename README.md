@@ -25,7 +25,7 @@ summaries, and a doctor hub (directory, questions, visits, prescriptions).
 - **Analyze** — capture or upload 3 photos (front, right side, left side), validate the angles, then get a detailed skin, acne, and acne-marks report.
 - **Daily tracker** — AI suggestions become habits automatically; tick them off, build a streak.
 - **Custom habits** — add, pause, or delete your own routine steps.
-- **Progress photos** — visual timeline with optional AI analysis per photo.
+- **Progress** — a 12-month activity heatmap/calendar (click a day to see completed tasks) plus a visual timeline of progress photos with optional AI analysis.
 - **What changed** — compare any two analyses (field-level cards + AI narrative).
 - **Doctor hub** — dermatologist directory, question log with answers, visit/prescription tracking.
 - **PDF export** — download any saved analysis as a report.

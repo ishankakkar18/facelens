@@ -29,6 +29,13 @@ export function todayISO() {
   return new Date(now.getTime() - offset * 60 * 1000).toISOString().slice(0, 10)
 }
 
+export function isoDaysAgo(days) {
+  const date = new Date()
+  date.setDate(date.getDate() - days)
+  const offset = date.getTimezoneOffset()
+  return new Date(date.getTime() - offset * 60 * 1000).toISOString().slice(0, 10)
+}
+
 export function greeting() {
   const hour = new Date().getHours()
   if (hour < 12) return 'Good morning'

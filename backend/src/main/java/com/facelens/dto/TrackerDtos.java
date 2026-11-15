@@ -60,4 +60,7 @@ public final class TrackerDtos {
             int streak
     ) {
     }
+
+    public record HeatmapDayDto(LocalDate date, int completed, int total, double ratio) {
+    }
 }

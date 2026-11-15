@@ -3,7 +3,7 @@ import Icon from './Icons'
 
 export default function AuthShell({ title, subtitle, children, footer }) {
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-brand-50 via-white to-slate-50">
       <div className="mx-auto w-full max-w-6xl px-5 py-5">
         <Link to="/" className="inline-flex items-center gap-2.5">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white">

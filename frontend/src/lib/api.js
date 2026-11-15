@@ -124,6 +124,7 @@ export const trackerApi = {
   updateHabit: (id, patch) => request(`/api/tracker/habits/${id}`, { method: 'PATCH', body: patch }),
   removeHabit: (id) => request(`/api/tracker/habits/${id}`, { method: 'DELETE' }),
   logs: (from, to) => request(`/api/tracker/logs?from=${from}&to=${to}`),
+  heatmap: (from, to) => request(`/api/tracker/heatmap?from=${from}&to=${to}`),
   upsertLog: (habitId, logDate, completed, notes) =>
     request('/api/tracker/logs', {
       method: 'POST',
