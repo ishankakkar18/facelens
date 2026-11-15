@@ -190,19 +190,36 @@ public class GeminiService {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final String apiKey;
-    private final String model;
+    private final List<String> models;
 
     public GeminiService(
             ObjectMapper objectMapper,
             @Value("${app.gemini.api-key:}") String apiKey,
-            @Value("${app.gemini.model:gemini-3.5-flash}") String model
+            @Value("${app.gemini.model:gemini-3.1-flash-lite}") String model,
+            @Value("${app.gemini.fallback-models:gemini-3.5-flash,gemini-3.6-flash}") String fallbackModels
     ) {
         this.restClient = RestClient.builder()
                 .baseUrl("https://generativelanguage.googleapis.com")
                 .build();
         this.objectMapper = objectMapper;
         this.apiKey = apiKey == null ? "" : apiKey.trim();
-        this.model = model;
+        this.models = buildModelList(model, fallbackModels);
+    }
+
+    private static List<String> buildModelList(String primary, String fallbacks) {
+        List<String> result = new ArrayList<>();
+        if (primary != null && !primary.isBlank()) {
+            result.add(primary.trim());
+        }
+        if (fallbacks != null) {
+            for (String part : fallbacks.split(",")) {
+                String value = part.trim();
+                if (!value.isBlank() && !result.contains(value)) {
+                    result.add(value);
+                }
+            }
+        }
+        return result;
     }
 
     public Map<String, Object> analyze(byte[] imageBytes, String mimeType) {
@@ -304,33 +321,59 @@ public class GeminiService {
     }
 
     private String callGemini(Map<String, Object> payload) {
-        String path = "/v1beta/models/" + model + ":generateContent";
-        try {
-            String body = restClient.post()
-                    .uri(uriBuilder -> uriBuilder.path(path).queryParam("key", apiKey).build())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(payload)
-                    .retrieve()
-                    .body(String.class);
+        boolean quotaExhausted = false;
+        String lastDetail = null;
 
-            JsonNode root = objectMapper.readTree(body == null ? "{}" : body);
-            JsonNode textNode = root.path("candidates").path(0).path("content").path("parts").path(0).path("text");
-            if (textNode.isMissingNode() || textNode.asText().isBlank()) {
-                throw new ApiException(502, "Gemini returned an unexpected response shape.");
+        for (String candidate : models) {
+            try {
+                return callModel(candidate, payload);
+            } catch (RestClientResponseException exception) {
+                int status = exception.getStatusCode().value();
+                String detail = exception.getResponseBodyAsString();
+                if (detail.length() > 500) {
+                    detail = detail.substring(0, 500);
+                }
+                lastDetail = detail;
+
+                if (status == 429) {
+                    quotaExhausted = true;
+                    continue;
+                }
+                if (status == 404 || status == 500 || status == 503) {
+                    continue;
+                }
+                throw new ApiException(502, "Gemini API error (" + status + "): " + detail);
+            } catch (RestClientException exception) {
+                lastDetail = exception.getMessage();
             }
-            return textNode.asText();
-        } catch (RestClientResponseException exception) {
-            String detail = exception.getResponseBodyAsString();
-            if (detail.length() > 500) {
-                detail = detail.substring(0, 500);
-            }
-            throw new ApiException(502,
-                    "Gemini API error (" + exception.getStatusCode().value() + "): " + detail);
-        } catch (RestClientException exception) {
-            throw new ApiException(502, "Could not reach Gemini: " + exception.getMessage());
-        } catch (Exception exception) {
-            throw new ApiException(502, "Gemini request failed: " + exception.getMessage());
         }
+
+        if (quotaExhausted) {
+            throw new ApiException(429,
+                    "The free daily AI limit has been reached. Please try again after midnight US Pacific Time, "
+                            + "or add billing to your Gemini API key.");
+        }
+
+        throw new ApiException(502,
+                "Gemini is temporarily unavailable. Please try again in a minute."
+                        + (lastDetail == null ? "" : " (" + lastDetail + ")"));
+    }
+
+    private String callModel(String model, Map<String, Object> payload) {
+        String path = "/v1beta/models/" + model + ":generateContent";
+        String body = restClient.post()
+                .uri(uriBuilder -> uriBuilder.path(path).queryParam("key", apiKey).build())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(payload)
+                .retrieve()
+                .body(String.class);
+
+        JsonNode root = objectMapper.readTree(body == null ? "{}" : body);
+        JsonNode textNode = root.path("candidates").path(0).path("content").path("parts").path(0).path("text");
+        if (textNode.isMissingNode() || textNode.asText().isBlank()) {
+            throw new ApiException(502, "Gemini returned an unexpected response shape.");
+        }
+        return textNode.asText();
     }
 
     private Map<String, Object> parseJsonObject(String text) {

@@ -264,6 +264,10 @@ export default function Analyze() {
           <p className="text-center text-xs text-slate-500">
             All three angles are checked first. If one is wrong, you'll be asked to retake it.
           </p>
+          <p className="text-center text-xs text-slate-400">
+            Free AI limit: about 20 analyses per day. If it's reached, try again after midnight US
+            Pacific Time.
+          </p>
         </div>
       </form>
 

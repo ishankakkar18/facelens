@@ -13,7 +13,7 @@ summaries, and a doctor hub (directory, questions, visits, prescriptions).
 | Frontend | React + Vite + Tailwind CSS (deploy: Vercel) |
 | Backend | Spring Boot 4 (Java 21) + Spring Security + Spring Data JPA (deploy: Render Docker) |
 | Database | H2 file for local dev, TiDB Cloud Serverless MySQL for production |
-| AI | Google Gemini (`gemini-3.5-flash`) |
+| AI | Google Gemini (`gemini-3.1-flash-lite`, fallbacks `gemini-3.5-flash` / `gemini-3.6-flash`) |
 | Storage | Cloudflare R2 when configured, local `backend/uploads` otherwise |
 | Auth | JWT (email + password, BCrypt) |
 
@@ -113,7 +113,8 @@ production, set the same values as environment variables.
 | `SPRING_DATASOURCE_USERNAME` | MySQL username |
 | `SPRING_DATASOURCE_PASSWORD` | MySQL password |
 | `GEMINI_API_KEY` | Required for analysis |
-| `GEMINI_MODEL` | Default `gemini-3.5-flash` |
+| `GEMINI_MODEL` | Primary model, default `gemini-3.1-flash-lite` |
+| `GEMINI_FALLBACK_MODELS` | Comma-separated fallback models for 429/404/503 |
 | `CORS_ORIGINS` | Comma-separated allowed origins |
 | `R2_*` | Optional Cloudflare R2 credentials |
 | `UPLOAD_DIR` | Local upload directory, default `uploads` |

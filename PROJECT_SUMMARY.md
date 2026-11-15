@@ -110,7 +110,7 @@ Password: password123
 | Frontend | React 18, Vite 6, React Router 6, Tailwind CSS 3 |
 | Backend | Spring Boot 4.1.2, Java 21, Spring Security, Spring Data JPA |
 | Auth | JWT (JJWT 0.13), BCrypt password hashing |
-| AI | Google Gemini `gemini-3.5-flash` (REST) |
+| AI | Google Gemini `gemini-3.1-flash-lite` (fallback: `gemini-3.5-flash`, `gemini-3.6-flash`) |
 | PDF | OpenPDF 3.0.5 |
 | Storage | Local `uploads/` or Cloudflare R2 (AWS SDK v2) |
 | Database (local) | H2 file, MySQL compatibility mode |
@@ -229,7 +229,8 @@ npm run dev
 | `SPRING_DATASOURCE_USERNAME` | MySQL username |
 | `SPRING_DATASOURCE_PASSWORD` | MySQL password |
 | `GEMINI_API_KEY` | Google Gemini API key |
-| `GEMINI_MODEL` | Default `gemini-3.5-flash` |
+| `GEMINI_MODEL` | Primary model, default `gemini-3.1-flash-lite` |
+| `GEMINI_FALLBACK_MODELS` | Comma-separated fallback models (used on 429/404/503) |
 | `CORS_ORIGINS` | Comma-separated allowed origins |
 | `R2_*` | Optional Cloudflare R2 credentials |
 | `UPLOAD_DIR` | Local upload directory |
@@ -252,7 +253,8 @@ npm run dev
 - Render env vars:
   - `SECRET_KEY` (generated)
   - `GEMINI_API_KEY`
-  - `GEMINI_MODEL=gemini-3.5-flash`
+  - `GEMINI_MODEL=gemini-3.1-flash-lite`
+  - `GEMINI_FALLBACK_MODELS=gemini-3.5-flash,gemini-3.6-flash`
   - `CORS_ORIGINS=https://facelens.vercel.app,http://localhost:5173,http://127.0.0.1:5173`
 - Current database: **TiDB Cloud Serverless MySQL** (persistent, AWS Oregon)
 - Free instance sleeps after ~15 minutes; first request may take ~50 seconds
@@ -289,6 +291,8 @@ The deployed system was tested end-to-end:
 - Registration + login from the deployed frontend: success
 - Dashboard loads tracker summary and analysis count
 - Live Gemini analysis: `200` with `facial_shape: oval`, `age_range: 24-32`
+- Gemini fallback chain: an invalid primary model fell back to `gemini-3.1-flash-lite` and
+  completed the analysis normally
 - 3-photo validation: `422` with per-angle `photo_errors` when photos are duplicated
 - Result page rendering: acne severity, acne marks, hydration, pores, clinical notes, and
   "What to use" ingredients verified with a mock report
@@ -309,6 +313,9 @@ The deployed system was tested end-to-end:
    instance is throttled if the free quota is exhausted.
 2. **Free-tier cold starts** — Render sleeps after inactivity; the first request can be slow.
    A GitHub Actions workflow pings `/health` every 10 minutes to keep it warm.
+3. **Free Gemini daily limit** — about 20 requests/day per model on the free tier. The backend
+   automatically falls back across `gemini-3.1-flash-lite` → `gemini-3.5-flash` → `gemini-3.6-flash`.
+   If all are exhausted, analysis shows a clear "try again after midnight US Pacific Time" message.
 3. **Demo dermatologist directory** — seeded sample data marked "(sample)"; replace with a
    verified source before real use.
 4. **Doctor answers are user-entered notes** — not real medical replies.
