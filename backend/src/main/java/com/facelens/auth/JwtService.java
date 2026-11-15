@@ -27,27 +27,36 @@ public class JwtService {
         this.expirationMinutes = expirationMinutes;
     }
 
-    public String generate(Long userId) {
+    public String generate(Long userId, String email) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(String.valueOf(userId))
+                .claim("email", email)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(expirationMinutes * 60)))
                 .signWith(key)
                 .compact();
     }
 
-    public Long parseUserId(String token) {
+    public TokenPayload parse(String token) {
         try {
             Claims claims = Jwts.parser()
                     .verifyWith(key)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-            return Long.valueOf(claims.getSubject());
+            Long userId = Long.valueOf(claims.getSubject());
+            String email = claims.get("email", String.class);
+            if (email == null || email.isBlank()) {
+                return null;
+            }
+            return new TokenPayload(userId, email);
         } catch (JwtException | IllegalArgumentException exception) {
             return null;
         }
+    }
+
+    public record TokenPayload(Long userId, String email) {
     }
 
     private static byte[] sha256(String value) {

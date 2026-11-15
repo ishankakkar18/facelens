@@ -276,6 +276,9 @@ The deployed system was tested end-to-end:
 - Registration + login from the deployed frontend: success
 - Dashboard loads tracker summary and analysis count
 - Live Gemini analysis: `200` with `facial_shape: oval`, `age_range: 24-32`
+- 3-photo validation: `422` with per-angle `photo_errors` when photos are duplicated
+- Result page rendering: acne severity, acne marks, hydration, pores, clinical notes, and
+  "What to use" ingredients verified with a mock report
 - Local backend tests also covered: habits, logs, streak, doctors, questions, visits,
   progress photos, PDF export, and AI change insights
 

@@ -51,7 +51,7 @@ public class AuthController {
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         userRepository.save(user);
 
-        String token = jwtService.generate(user.getId());
+        String token = jwtService.generate(user.getId(), user.getEmail());
         return ResponseEntity.status(HttpStatus.CREATED).body(TokenResponse.of(token, user));
     }
 
@@ -65,7 +65,7 @@ public class AuthController {
             throw new ApiException(401, "Incorrect email or password.");
         }
 
-        return TokenResponse.of(jwtService.generate(user.getId()), user);
+        return TokenResponse.of(jwtService.generate(user.getId(), user.getEmail()), user);
     }
 
     @GetMapping("/me")
