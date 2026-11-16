@@ -36,9 +36,12 @@ Password: password123
 - Capture with the camera or upload 3 photos: **front**, **right side**, **left side**
 - The AI checks the angles first; wrong/duplicate/covered photos are rejected with per-angle feedback
 - Structured AI report: overall description, estimated age range, facial shape, symmetry,
-  skin tone/texture/hydration/pores/oiliness, **acne** (severity, types, locations, inflammation),
-  **acne marks** (PIH/PIE, severity, locations), features, strengths, focus areas,
-  medical notes, and **"What to use"** ingredient suggestions
+  skin tone/texture/hydration/pores/oiliness/barrier, **acne** (severity, grade, types, locations,
+  inflammation, scarring risk), **acne marks** (PIH/PIE, severity, locations, note), clinical
+  impression, **biggest issue / biggest win**, a candid **reality check**, photo quality/confidence,
+  and a personalized **AM/PM/weekly routine** with an expected timeline
+- Report tabs: **Overview / Acne & marks / Routine / What to use**
+- "Add this routine to my tracker" creates daily habits from the routine steps
 - PDF export of any saved report
 
 ### Daily tracker
@@ -294,6 +297,10 @@ The deployed system was tested end-to-end:
 - Gemini fallback chain: an invalid primary model fell back to `gemini-3.1-flash-lite` and
   completed the analysis normally
 - 3-photo validation: `422` with per-angle `photo_errors` when photos are duplicated
+- New report UI: Overview / Acne & marks / Routine / What to use tabs verified with a realistic
+  moderate-acne report; "Add this routine to my tracker" created 9 habits successfully
+- New AI prompt returns acne grade, scarring risk, PIH/PIE, clinical impression, biggest issue/win,
+  reality check, photo quality, confidence, and an AM/PM/weekly routine
 - Result page rendering: acne severity, acne marks, hydration, pores, clinical notes, and
   "What to use" ingredients verified with a mock report
 - Activity heatmap: 31-day range returned correct counts; clicking a day displayed completed

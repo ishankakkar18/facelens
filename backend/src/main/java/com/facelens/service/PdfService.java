@@ -44,6 +44,8 @@ public class PdfService {
             addFact(document, "Estimated age range", text(result, "estimated_age_range"), bodyFont);
             addFact(document, "Facial shape", text(result, "facial_shape"), bodyFont);
             addFact(document, "Symmetry", text(result, "symmetry_notes"), bodyFont);
+            addFact(document, "Photo quality", text(result, "photo_quality"), bodyFont);
+            addFact(document, "Analysis confidence", text(result, "confidence"), bodyFont);
 
             Map<String, Object> skin = map(result, "skin");
             if (!skin.isEmpty()) {
@@ -61,6 +63,8 @@ public class PdfService {
             if (!acne.isEmpty()) {
                 heading(document, "Acne (visible signs)", headingFont);
                 addFact(document, "Severity", text(acne, "severity"), bodyFont);
+                addFact(document, "Grade", text(acne, "grade"), bodyFont);
+                addFact(document, "Scarring risk", text(acne, "scarring_risk"), bodyFont);
                 addFact(document, "Inflammation", text(acne, "inflammation"), bodyFont);
                 List<?> acneTypes = list(acne, "types");
                 if (!acneTypes.isEmpty()) {
@@ -79,6 +83,7 @@ public class PdfService {
                 heading(document, "Acne marks", headingFont);
                 addFact(document, "Type", text(acneMarks, "type"), bodyFont);
                 addFact(document, "Severity", text(acneMarks, "severity"), bodyFont);
+                addFact(document, "Note", text(acneMarks, "note"), bodyFont);
                 List<?> markLocations = list(acneMarks, "locations");
                 if (!markLocations.isEmpty()) {
                     paragraph(document, "Locations:", bodyFont);
@@ -86,10 +91,22 @@ public class PdfService {
                 }
             }
 
-            String medicalNotes = text(result, "medical_notes");
-            if (medicalNotes != null && !medicalNotes.isBlank()) {
-                heading(document, "Clinical notes", headingFont);
-                paragraph(document, medicalNotes, bodyFont);
+            String clinical = text(result, "clinical_impression");
+            if (clinical == null || clinical.isBlank()) {
+                clinical = text(result, "medical_notes");
+            }
+            if (clinical != null && !clinical.isBlank()) {
+                heading(document, "Clinical impression", headingFont);
+                paragraph(document, clinical, bodyFont);
+            }
+
+            addFact(document, "Biggest issue", text(result, "biggest_issue"), bodyFont);
+            addFact(document, "Biggest win", text(result, "biggest_win"), bodyFont);
+
+            String reality = text(result, "reality_check");
+            if (reality != null && !reality.isBlank()) {
+                heading(document, "Reality check", headingFont);
+                paragraph(document, reality, bodyFont);
             }
 
             Map<String, Object> features = map(result, "features");            if (!features.isEmpty()) {
@@ -97,6 +114,26 @@ public class PdfService {
                 for (Map.Entry<String, Object> entry : features.entrySet()) {
                     if (entry.getValue() != null) {
                         addFact(document, capitalize(entry.getKey()), entry.getValue().toString(), bodyFont);
+                    }
+                }
+            }
+
+            Map<String, Object> routine = map(result, "routine");
+            if (!routine.isEmpty()) {
+                heading(document, "Personalized routine", headingFont);
+                addListSection(document, "Morning", list(routine, "am"), headingFont, bodyFont);
+                addListSection(document, "Evening", list(routine, "pm"), headingFont, bodyFont);
+                addListSection(document, "Weekly", list(routine, "weekly"), headingFont, bodyFont);
+                addListSection(document, "Avoid", list(routine, "avoid"), headingFont, bodyFont);
+
+                Map<String, Object> timeline = map(routine, "timeline");
+                if (!timeline.isEmpty()) {
+                    heading(document, "Expected timeline", headingFont);
+                    for (Map.Entry<String, Object> entry : timeline.entrySet()) {
+                        if (entry.getValue() != null) {
+                            addFact(document, capitalize(entry.getKey().replace("_", " ")),
+                                    entry.getValue().toString(), bodyFont);
+                        }
                     }
                 }
             }

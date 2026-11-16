@@ -159,6 +159,10 @@ public class InsightsController {
         Map<String, Object> acneDiff = new LinkedHashMap<>();
         acneDiff.put("previous_severity", asText(previousAcne.get("severity")));
         acneDiff.put("current_severity", asText(currentAcne.get("severity")));
+        acneDiff.put("previous_grade", asText(previousAcne.get("grade")));
+        acneDiff.put("current_grade", asText(currentAcne.get("grade")));
+        acneDiff.put("previous_scarring_risk", asText(previousAcne.get("scarring_risk")));
+        acneDiff.put("current_scarring_risk", asText(currentAcne.get("scarring_risk")));
         acneDiff.put("previous_types", previousAcne.get("types"));
         acneDiff.put("current_types", currentAcne.get("types"));
         diff.put("acne", acneDiff);

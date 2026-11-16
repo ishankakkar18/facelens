@@ -15,6 +15,13 @@ const ANGLES = [
   { key: 'left', label: 'Left side', hint: 'Turn to show your left cheek' },
 ]
 
+const LOADING_STEPS = [
+  'Uploading the three photos',
+  'Checking angles and photo quality',
+  'Analyzing acne, marks, and barrier',
+  'Building your personalized routine',
+]
+
 export default function Analyze() {
   const navigate = useNavigate()
   const inputRefs = useRef({})
@@ -26,14 +33,24 @@ export default function Analyze() {
   const [slotErrors, setSlotErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [slow, setSlow] = useState(false)
+  const [progressStep, setProgressStep] = useState(0)
 
   useEffect(() => {
     if (!submitting) {
       setSlow(false)
+      setProgressStep(0)
       return
     }
-    const timer = setTimeout(() => setSlow(true), 6000)
-    return () => clearTimeout(timer)
+    const slowTimer = setTimeout(() => setSlow(true), 6000)
+    const stepTimers = [
+      setTimeout(() => setProgressStep(1), 2500),
+      setTimeout(() => setProgressStep(2), 8000),
+      setTimeout(() => setProgressStep(3), 20000),
+    ]
+    return () => {
+      clearTimeout(slowTimer)
+      stepTimers.forEach(clearTimeout)
+    }
   }, [submitting])
 
   async function setPhoto(key, file) {
@@ -133,6 +150,21 @@ export default function Analyze() {
         ))}
       </div>
 
+      <div className="card mb-5 flex flex-wrap items-center gap-3 p-4">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+          <Icon name="info" className="h-4 w-4" />
+        </span>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          For the best report
+        </p>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+          <span>Bright, even light</span>
+          <span>Hair off the face</span>
+          <span>No glasses</span>
+          <span>Relaxed expression</span>
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit}>
         <div className="grid gap-4 md:grid-cols-3">
           {ANGLES.map((angle, index) => {
@@ -151,7 +183,7 @@ export default function Analyze() {
                   <span className="chip">{index + 1}/3</span>
                 </div>
 
-                <div className="mt-3 aspect-[4/5] overflow-hidden rounded-xl bg-slate-100">
+                <div className="relative mt-3 aspect-[4/5] overflow-hidden rounded-xl bg-gradient-to-br from-slate-100 to-slate-200">
                   {photo ? (
                     <img
                       src={photo.preview}
@@ -164,6 +196,16 @@ export default function Analyze() {
                       <span className="text-xs">{angle.label} photo</span>
                     </div>
                   )}
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <div className="h-[72%] w-[58%] rounded-[50%] border-2 border-dashed border-brand-300/80" />
+                  </div>
+                  <span
+                    className={`pointer-events-none absolute inset-x-0 bottom-2 text-center text-[10px] font-medium ${
+                      photo ? 'text-white drop-shadow' : 'text-slate-400'
+                    }`}
+                  >
+                    Align your face inside the oval
+                  </span>
                 </div>
 
                 {slotError && <p className="mt-2 text-xs font-medium text-rose-600">{slotError}</p>}
@@ -283,15 +325,50 @@ export default function Analyze() {
       )}
 
       {submitting && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-white/80 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-card ring-1 ring-slate-100">
-            <Spinner className="mx-auto h-8 w-8 text-brand-600" />
-            <p className="mt-4 font-semibold text-slate-900">Checking your three angles…</p>
-            <p className="mt-1 text-sm text-slate-500">
-              {slow
-                ? 'This can take up to a minute while the free server wakes up.'
-                : 'Then we analyze skin, acne, and marks in detail.'}
-            </p>
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-white/85 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-card ring-1 ring-slate-100">
+            <div className="flex items-center gap-3">
+              <Spinner className="h-7 w-7 text-brand-600" />
+              <div>
+                <p className="font-semibold text-slate-900">Building your skin report</p>
+                <p className="text-xs text-slate-500">
+                  {slow
+                    ? 'The free server can take up to a minute to wake up.'
+                    : 'This usually takes 15–40 seconds.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-2">
+              {LOADING_STEPS.map((step, index) => (
+                <div
+                  key={step}
+                  className={`flex items-center gap-2 text-sm ${
+                    index <= progressStep ? 'text-slate-800' : 'text-slate-400'
+                  }`}
+                >
+                  <span
+                    className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                      index < progressStep
+                        ? 'bg-emerald-500 text-white'
+                        : index === progressStep
+                          ? 'bg-brand-600 text-white'
+                          : 'bg-slate-100 text-slate-400'
+                    }`}
+                  >
+                    {index < progressStep ? <Icon name="check" className="h-3 w-3" /> : index + 1}
+                  </span>
+                  {step}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-brand-600 transition-all duration-700"
+                style={{ width: `${Math.min(100, ((progressStep + 1) / LOADING_STEPS.length) * 100)}%` }}
+              />
+            </div>
           </div>
         </div>
       )}

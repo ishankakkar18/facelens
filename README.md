@@ -22,7 +22,7 @@ summaries, and a doctor hub (directory, questions, visits, prescriptions).
 
 ## Features
 
-- **Analyze** — capture or upload 3 photos (front, right side, left side), validate the angles, then get a detailed skin, acne, and acne-marks report.
+- **Analyze** — capture or upload 3 photos (front, right side, left side), validate the angles, then get a candid skin report with **acne grading, acne marks, scarring risk, clinical impression, a reality check, and a personalized AM/PM routine** (tabs: Overview / Acne & marks / Routine / What to use).
 - **Daily tracker** — AI suggestions become habits automatically; tick them off, build a streak.
 - **Custom habits** — add, pause, or delete your own routine steps.
 - **Progress** — a 12-month activity heatmap/calendar (click a day to see completed tasks) plus a visual timeline of progress photos with optional AI analysis.

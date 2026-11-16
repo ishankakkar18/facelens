@@ -39,6 +39,7 @@ export default function Dashboard() {
   const [summary, setSummary] = useState(null)
   const [changes, setChanges] = useState(null)
   const [heatmap, setHeatmap] = useState([])
+  const [latestAnalysis, setLatestAnalysis] = useState(null)
   const [changesNote, setChangesNote] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -63,6 +64,7 @@ export default function Dashboard() {
         if (!active) return
         setSummary(data)
         setHeatmap(heatmapDays)
+        setLatestAnalysis(analysisPage.items?.[0] || null)
         if (analysisPage.total >= 2) {
           try {
             const insight = await insightsApi.changes()
@@ -157,6 +159,30 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {latestAnalysis?.result_json?.biggest_issue && (
+        <div className="card mt-6 border-l-4 border-rose-400 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-rose-500">
+                Focus now
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">
+                {latestAnalysis.result_json.biggest_issue}
+              </p>
+              {latestAnalysis.result_json.biggest_win && (
+                <p className="mt-1 text-sm text-slate-500">
+                  <strong className="text-slate-700">Quickest win:</strong>{' '}
+                  {latestAnalysis.result_json.biggest_win}
+                </p>
+              )}
+            </div>
+            <Link to={`/result/${latestAnalysis.id}`} className="btn-ghost shrink-0">
+              Open report <Icon name="arrowRight" className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-5">
         <div className="card p-5 lg:col-span-3">

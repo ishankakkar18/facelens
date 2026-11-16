@@ -185,6 +185,29 @@ export default function Compare() {
                     </p>
                   </div>
                 )}
+                {(data.diff.acne?.previous_grade || data.diff.acne?.current_grade) && (
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Acne grade
+                    </p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      {data.diff.acne.previous_grade || '—'} →{' '}
+                      <strong>{data.diff.acne.current_grade || '—'}</strong>
+                    </p>
+                  </div>
+                )}
+                {(data.diff.acne?.previous_scarring_risk ||
+                  data.diff.acne?.current_scarring_risk) && (
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Scarring risk
+                    </p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      {data.diff.acne.previous_scarring_risk || '—'} →{' '}
+                      <strong>{data.diff.acne.current_scarring_risk || '—'}</strong>
+                    </p>
+                  </div>
+                )}
                 {data.diff.acne_marks && (
                   <div className="rounded-xl bg-slate-50 p-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">

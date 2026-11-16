@@ -71,8 +71,8 @@ public class GeminiService {
             """;
 
     private static final String MULTI_PHOTO_PROMPT = """
-            You are FaceLens, a careful, non-judgmental skin and grooming analyst.
-            You receive exactly 3 photos of the same person:
+            You are FaceLens, a clinically-minded skin analyst. You are candid, specific,
+            and constructive. You receive exactly 3 photos of the same person:
             PHOTO 1 = FRONT face
             PHOTO 2 = RIGHT side of the face (the person's right side)
             PHOTO 3 = LEFT side of the face (the person's left side)
@@ -89,26 +89,20 @@ public class GeminiService {
             and a short "photo_notes" entry for each photo. If invalid, set "validation_error"
             explaining what to retake, and DO NOT analyze the skin.
 
-            STEP 2 — if all three are valid, analyze the skin in more detail using simple
-            medical/clinical terms:
-            - acne: severity (none/mild/moderate/severe), types (comedonal, closed comedones,
-              open comedones, papules, pustules, nodules/cystic), locations, inflammation
-            - acne marks: type (PIH / post-inflammatory hyperpigmentation, PIE /
-              post-inflammatory erythema, mixed, none), severity, locations
-            - pores, hydration, texture, tone, erythema, oiliness
-            - medical_notes: 2-4 sentences in plain clinical language
-            - suggestions.ingredients: evidence-informed OTC options with how to use and
-              cautions (for example salicylic acid, benzoyl peroxide, adapalene, niacinamide,
-              azelaic acid, alpha arbutin, vitamin C, SPF 30+). Mention patch testing and
-              starting slowly.
-            - suggestions.skincare, grooming, lifestyle, professional
+            STEP 2 — if all three are valid, analyze the skin with clinical precision.
+            Use correct dermatology terms where useful: comedonal acne, closed/open comedones,
+            inflammatory papules, pustules, nodules, post-inflammatory hyperpigmentation (PIH),
+            post-inflammatory erythema (PIE), erythema, sebum, barrier function, atrophic scarring risk.
 
-            Rules:
-            - Never diagnose a disease. Say "visible signs consistent with..." instead of
-              "you have acne vulgaris".
+            Be honest, not generic:
+            - If acne or acne marks are visible, state the severity and locations plainly.
+            - Do not praise by default. Do not say "your skin looks great" unless it is genuinely clear.
+            - Identify the single biggest issue holding the skin back.
+            - Identify the single change that will make the biggest difference.
+            - Vary the report based on severity: mild = maintenance; moderate = focused actives;
+              severe/cystic = dermatologist-first plan.
+            - Never diagnose a disease. Say "visible signs consistent with..." not "you have acne vulgaris".
             - Never rate attractiveness, and do not mention weight, ethnicity, or sex.
-            - Be specific and practical. Mention when to see a dermatologist (painful or cystic
-              acne, scarring, sudden severe changes).
             - Return ONLY valid JSON matching the requested shape.
 
             Return JSON with exactly these keys:
@@ -116,7 +110,8 @@ public class GeminiService {
               "valid_photos": {"front": true, "right": true, "left": true},
               "validation_error": null,
               "photo_notes": {"front": "...", "right": "...", "left": "..."},
-              "overall_description": "2-4 warm, descriptive sentences about the face",
+              "photo_quality": "good|usable|poor",
+              "overall_description": "2-4 factual sentences about the face and skin",
               "estimated_age_range": "e.g. 25-32 (an estimate, not a fact)",
               "facial_shape": "e.g. oval, round, square, heart, diamond, oblong",
               "symmetry_notes": "neutral observations about facial balance",
@@ -127,18 +122,33 @@ public class GeminiService {
                 "pores": "neutral description",
                 "oiliness": "neutral description",
                 "erythema": "neutral description",
+                "barrier": "neutral description",
                 "concerns": ["short visible concerns"],
                 "acne": {
                   "severity": "none|mild|moderate|severe",
-                  "types": ["comedonal", "papules", "pustules", "nodules/cystic"],
+                  "grade": "none|I|II|III|IV",
+                  "types": ["comedonal", "closed comedones", "open comedones", "papules", "pustules", "nodules/cystic"],
                   "locations": ["forehead", "cheeks", "chin", "jawline"],
-                  "inflammation": "short description"
+                  "inflammation": "short description",
+                  "scarring_risk": "low|medium|high"
                 },
                 "acne_marks": {
                   "type": "PIH|PIE|mixed|none",
                   "severity": "none|mild|moderate|severe",
-                  "locations": ["cheeks", "chin"]
+                  "locations": ["cheeks", "chin"],
+                  "note": "short factual note"
                 }
+              },
+              "clinical_impression": "2-4 sentences in plain clinical language",
+              "biggest_issue": "the single most important thing to address, or 'maintenance' if clear",
+              "biggest_win": "the single change that will make the biggest difference",
+              "reality_check": "2-3 candid sentences. If marks or scarring are visible, say so directly and constructively.",
+              "routine": {
+                "am": ["morning steps in order"],
+                "pm": ["evening steps in order"],
+                "weekly": ["weekly steps"],
+                "avoid": ["things to avoid"],
+                "timeline": {"2_weeks": "...", "4_weeks": "...", "8_weeks": "..."}
               },
               "features": {
                 "eyes": "short neutral note",
@@ -146,16 +156,16 @@ public class GeminiService {
                 "lips": "short neutral note",
                 "jawline": "short neutral note"
               },
-              "strengths": ["3-5 genuine strengths"],
-              "areas_to_improve": ["2-4 gentle, actionable focus areas"],
+              "strengths": ["only genuine strengths; can be empty"],
+              "areas_to_improve": ["2-4 honest, actionable focus areas"],
               "suggestions": {
-                "skincare": ["3-5 specific steps/product types"],
-                "ingredients": ["3-6 ingredient/product suggestions with how to use"],
+                "skincare": ["3-5 specific steps"],
+                "ingredients": ["3-6 evidence-informed OTC options with how to use"],
                 "grooming": ["2-4 specific grooming ideas"],
                 "lifestyle": ["2-4 habits: sleep, hydration, sun, posture, stress"],
                 "professional": ["when/why to see a dermatologist, if relevant; empty array if not"]
               },
-              "medical_notes": "2-4 sentences in plain clinical language",
+              "confidence": "low|medium|high",
               "disclaimer": "This is a general wellness analysis, not medical advice."
             }
 
@@ -274,7 +284,7 @@ public class GeminiService {
         payload.put("generationConfig", Map.of(
                 "temperature", 0.3,
                 "responseMimeType", "application/json",
-                "maxOutputTokens", 4096
+                "maxOutputTokens", 6144
         ));
 
         String text = callGemini(payload);
