@@ -36,7 +36,7 @@ function Detail({ label, value }) {
   return (
     <div className="rounded-xl bg-slate-50 p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 text-sm text-slate-700">{value}</p>
+      <p className="mt-1 text-sm text-slate-700">{asText(value)}</p>
     </div>
   )
 }
@@ -47,6 +47,16 @@ function severityTone(value) {
   if (v === 'moderate' || v === 'medium') return 'amber'
   if (v === 'mild' || v === 'low') return 'green'
   return 'slate'
+}
+
+function asText(value) {
+  if (value == null) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (typeof value === 'object') {
+    return value.text || value.note || value.title || value.name || value.description || JSON.stringify(value)
+  }
+  return String(value)
 }
 
 function PhotoStrip({ previews }) {
@@ -92,11 +102,11 @@ function RoutineCard({ title, icon, items, tone = 'brand' }) {
       {list.length ? (
         <ol className="space-y-2 text-sm text-slate-700">
           {list.map((item, index) => (
-            <li key={`${item}-${index}`} className="flex gap-2">
+            <li key={`${asText(item)}-${index}`} className="flex gap-2">
               <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-500">
                 {index + 1}
               </span>
-              {item}
+              {asText(item)}
             </li>
           ))}
         </ol>
@@ -277,10 +287,10 @@ export default function Result() {
           <section className="card p-5">
             <PhotoStrip previews={previews} />
             <div className="mt-4 flex flex-wrap gap-2">
-              {result.facial_shape && <Badge>{result.facial_shape}</Badge>}
-              {result.estimated_age_range && <Badge tone="slate">{result.estimated_age_range}</Badge>}
-              {result.photo_quality && <Badge tone="slate">Photo: {result.photo_quality}</Badge>}
-              {result.confidence && <Badge tone="slate">Confidence: {result.confidence}</Badge>}
+              {result.facial_shape && <Badge>{asText(result.facial_shape)}</Badge>}
+              {result.estimated_age_range && <Badge tone="slate">{asText(result.estimated_age_range)}</Badge>}
+              {result.photo_quality && <Badge tone="slate">Photo: {asText(result.photo_quality)}</Badge>}
+              {result.confidence && <Badge tone="slate">Confidence: {asText(result.confidence)}</Badge>}
               {data.saved ? <Badge tone="green">Saved</Badge> : <Badge tone="amber">Ephemeral</Badge>}
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-700">{result.overall_description}</p>
@@ -297,7 +307,7 @@ export default function Result() {
                 Biggest issue
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-700">
-                {result.biggest_issue || 'No major issue detected — focus on maintenance.'}
+                {asText(result.biggest_issue) || 'No major issue detected — focus on maintenance.'}
               </p>
             </div>
             <div className="card border-l-4 border-emerald-400 p-5">
@@ -305,21 +315,21 @@ export default function Result() {
                 Biggest win
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-700">
-                {result.biggest_win || 'Stay consistent with cleansing, moisturizer, and SPF.'}
+                {asText(result.biggest_win) || 'Stay consistent with cleansing, moisturizer, and SPF.'}
               </p>
             </div>
           </div>
 
           {result.reality_check && (
             <Section title="Reality check" icon="info">
-              <p className="text-sm leading-6 text-slate-700">{result.reality_check}</p>
+              <p className="text-sm leading-6 text-slate-700">{asText(result.reality_check)}</p>
             </Section>
           )}
 
           {(result.clinical_impression || result.medical_notes) && (
             <Section title="Clinical impression" icon="stethoscope">
               <p className="text-sm leading-6 text-slate-700">
-                {result.clinical_impression || result.medical_notes}
+                {asText(result.clinical_impression) || asText(result.medical_notes)}
               </p>
             </Section>
           )}
@@ -329,9 +339,9 @@ export default function Result() {
               {result.strengths?.length ? (
                 <ul className="space-y-2 text-sm text-slate-700">
                   {result.strengths.map((item) => (
-                    <li key={item} className="flex gap-2">
+                    <li key={asText(item)} className="flex gap-2">
                       <Icon name="check" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                      {item}
+                      {asText(item)}
                     </li>
                   ))}
                 </ul>
@@ -342,9 +352,9 @@ export default function Result() {
             <Section title="Focus areas" icon="spark">
               <ul className="space-y-2 text-sm text-slate-700">
                 {(result.areas_to_improve || []).map((item) => (
-                  <li key={item} className="flex gap-2">
+                  <li key={asText(item)} className="flex gap-2">
                     <Icon name="arrowRight" className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
-                    {item}
+                    {asText(item)}
                   </li>
                 ))}
               </ul>
@@ -360,7 +370,7 @@ export default function Result() {
               <div className="rounded-xl bg-slate-50 p-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Severity</p>
                 <div className="mt-1">
-                  <Badge tone={severityTone(acne.severity)}>{acne.severity || 'not assessed'}</Badge>
+                  <Badge tone={severityTone(acne.severity)}>{asText(acne.severity) || 'not assessed'}</Badge>
                 </div>
               </div>
               <Detail label="Grade" value={acne.grade} />
@@ -368,7 +378,7 @@ export default function Result() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Scarring risk</p>
                 <div className="mt-1">
                   <Badge tone={severityTone(acne.scarring_risk)}>
-                    {acne.scarring_risk || 'unknown'}
+                    {asText(acne.scarring_risk) || 'unknown'}
                   </Badge>
                 </div>
               </div>
@@ -382,14 +392,14 @@ export default function Result() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {acne.types.map((type) => (
-                    <span key={type} className="chip">{type}</span>
+                    <span key={asText(type)} className="chip">{asText(type)}</span>
                   ))}
                 </div>
               </div>
             )}
             {acne.locations?.length > 0 && (
               <p className="mt-2 text-xs text-slate-500">
-                <strong className="text-slate-600">Locations:</strong> {acne.locations.join(', ')}
+                <strong className="text-slate-600">Locations:</strong> {acne.locations.map(asText).join(', ')}
               </p>
             )}
           </Section>
@@ -401,14 +411,14 @@ export default function Result() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Severity</p>
                 <div className="mt-1">
                   <Badge tone={severityTone(acneMarks.severity)}>
-                    {acneMarks.severity || 'none'}
+                    {asText(acneMarks.severity) || 'none'}
                   </Badge>
                 </div>
               </div>
-              <Detail label="Locations" value={acneMarks.locations?.join(', ')} />
+              <Detail label="Locations" value={acneMarks.locations?.map(asText).join(', ')} />
             </div>
             {acneMarks.note && (
-              <p className="mt-3 text-sm leading-6 text-slate-700">{acneMarks.note}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-700">{asText(acneMarks.note)}</p>
             )}
           </Section>
 
@@ -425,7 +435,7 @@ export default function Result() {
             {skin.concerns?.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {skin.concerns.map((concern) => (
-                  <span key={concern} className="chip">{concern}</span>
+                  <span key={asText(concern)} className="chip">{asText(concern)}</span>
                 ))}
               </div>
             )}
@@ -447,9 +457,9 @@ export default function Result() {
                 <Section title="Avoid" icon="info">
                   <ul className="space-y-2 text-sm text-slate-700">
                     {routine.avoid.map((item) => (
-                      <li key={item} className="flex gap-2">
+                      <li key={asText(item)} className="flex gap-2">
                         <Icon name="close" className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
-                        {item}
+                        {asText(item)}
                       </li>
                     ))}
                   </ul>
@@ -464,7 +474,7 @@ export default function Result() {
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                           {key.replace('_', ' ')}
                         </p>
-                        <p className="mt-1 text-sm text-slate-700">{value}</p>
+                        <p className="mt-1 text-sm text-slate-700">{asText(value)}</p>
                       </div>
                     ))}
                   </div>
@@ -505,9 +515,9 @@ export default function Result() {
             {ingredients.length ? (
               <ul className="space-y-2 text-sm text-slate-700">
                 {ingredients.map((item) => (
-                  <li key={item} className="flex gap-2">
+                  <li key={asText(item)} className="flex gap-2">
                     <Icon name="check" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                    {item}
+                    {asText(item)}
                   </li>
                 ))}
               </ul>
@@ -524,9 +534,9 @@ export default function Result() {
             <Section title="Skincare steps" icon="sparkles">
               <ul className="space-y-2 text-sm text-slate-700">
                 {result.suggestions.skincare.map((item) => (
-                  <li key={item} className="flex gap-2">
+                  <li key={asText(item)} className="flex gap-2">
                     <Icon name="arrowRight" className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
-                    {item}
+                    {asText(item)}
                   </li>
                 ))}
               </ul>
@@ -537,9 +547,9 @@ export default function Result() {
             <Section title="Grooming" icon="user">
               <ul className="space-y-2 text-sm text-slate-700">
                 {result.suggestions.grooming.map((item) => (
-                  <li key={item} className="flex gap-2">
+                  <li key={asText(item)} className="flex gap-2">
                     <Icon name="arrowRight" className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
-                    {item}
+                    {asText(item)}
                   </li>
                 ))}
               </ul>
@@ -550,9 +560,9 @@ export default function Result() {
             <Section title="Lifestyle" icon="heart">
               <ul className="space-y-2 text-sm text-slate-700">
                 {result.suggestions.lifestyle.map((item) => (
-                  <li key={item} className="flex gap-2">
+                  <li key={asText(item)} className="flex gap-2">
                     <Icon name="check" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                    {item}
+                    {asText(item)}
                   </li>
                 ))}
               </ul>
@@ -563,9 +573,9 @@ export default function Result() {
             <Section title="When to see a professional" icon="stethoscope">
               <ul className="space-y-2 text-sm text-slate-700">
                 {professional.map((item) => (
-                  <li key={item} className="flex gap-2">
+                  <li key={asText(item)} className="flex gap-2">
                     <Icon name="info" className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                    {item}
+                    {asText(item)}
                   </li>
                 ))}
               </ul>
