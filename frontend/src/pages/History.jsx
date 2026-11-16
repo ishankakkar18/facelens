@@ -5,6 +5,27 @@ import { Alert, Badge, EmptyState, PageHeader, Spinner } from '../components/UI'
 import { analysisApi, imageUrl } from '../lib/api'
 import { formatDateTime } from '../lib/format'
 
+function HistoryThumbnail({ url }) {
+  const [failed, setFailed] = useState(false)
+  if (!url || failed) {
+    return (
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+        <Icon name="user" className="h-7 w-7" />
+      </div>
+    )
+  }
+  return (
+    <img
+      src={imageUrl(url)}
+      alt="Analysis"
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailed(true)}
+      className="h-16 w-16 shrink-0 rounded-xl object-cover ring-1 ring-slate-100"
+    />
+  )
+}
+
 export default function History() {
   const navigate = useNavigate()
   const [items, setItems] = useState([])
@@ -126,24 +147,26 @@ export default function History() {
                   {isSelected && <Icon name="check" className="h-4 w-4" />}
                 </button>
 
-                {item.front_image_url || item.image_url ? (
-                  <img
-                    src={imageUrl(item.front_image_url || item.image_url)}
-                    alt="Analysis"
-                    loading="lazy"
-                    decoding="async"
-                    className="h-16 w-16 shrink-0 rounded-xl object-cover ring-1 ring-slate-100"
-                  />
-                ) : (
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
-                    <Icon name="user" className="h-7 w-7" />
-                  </div>
-                )}
+                <HistoryThumbnail url={item.front_image_url || item.image_url} />
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold text-slate-900">{formatDateTime(item.created_at)}</p>
                     {result.facial_shape && <Badge tone="slate">{result.facial_shape}</Badge>}
+                    {result.skin?.acne?.severity &&
+                      result.skin.acne.severity !== 'none' && (
+                        <Badge
+                          tone={
+                            result.skin.acne.severity === 'severe'
+                              ? 'rose'
+                              : result.skin.acne.severity === 'moderate'
+                                ? 'amber'
+                                : 'green'
+                          }
+                        >
+                          {result.skin.acne.severity} acne
+                        </Badge>
+                      )}
                   </div>
                   <p className="mt-1 line-clamp-2 text-sm text-slate-600">
                     {result.overall_description || 'No summary available.'}

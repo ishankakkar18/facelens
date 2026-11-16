@@ -102,6 +102,9 @@ public class AnalyzeController {
         String frontUrl = null;
         String rightUrl = null;
         String leftUrl = null;
+        int habitsAdded = 0;
+        int habitsUpdated = 0;
+        int habitsPaused = 0;
 
         if (save && principal != null) {
             frontUrl = storageService.upload(frontImage.bytes(), frontImage.contentType());
@@ -117,10 +120,18 @@ public class AnalyzeController {
             analysis.setResultJson(objectMapper.writeValueAsString(result));
             analysisRepository.save(analysis);
             analysisId = analysis.getId();
-            habitService.createFromAnalysis(principal.getId(), analysis.getId(), result);
+
+            HabitService.RoutineSyncResult sync =
+                    habitService.syncRoutineFromAnalysis(principal.getId(), analysis.getId(), result);
+            habitsAdded = sync.added();
+            habitsUpdated = sync.updated();
+            habitsPaused = sync.paused();
         }
 
-        return new AnalyzeResponse(analysisId, frontUrl, frontUrl, rightUrl, leftUrl, result);
+        return new AnalyzeResponse(
+                analysisId, frontUrl, frontUrl, rightUrl, leftUrl, result,
+                habitsAdded, habitsUpdated, habitsPaused
+        );
     }
 
     @SuppressWarnings("unchecked")

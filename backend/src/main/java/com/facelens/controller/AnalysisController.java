@@ -8,6 +8,7 @@ import com.facelens.dto.AnalysisDtos.AnalysisListDto;
 import com.facelens.entity.Analysis;
 import com.facelens.exception.ApiException;
 import com.facelens.repository.AnalysisRepository;
+import com.facelens.service.HabitService;
 import com.facelens.service.PdfService;
 import com.facelens.service.StorageService;
 import java.time.ZoneId;
@@ -22,6 +23,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,17 +35,20 @@ public class AnalysisController {
     private final AnalysisRepository analysisRepository;
     private final StorageService storageService;
     private final PdfService pdfService;
+    private final HabitService habitService;
     private final ObjectMapper objectMapper;
 
     public AnalysisController(
             AnalysisRepository analysisRepository,
             StorageService storageService,
             PdfService pdfService,
+            HabitService habitService,
             ObjectMapper objectMapper
     ) {
         this.analysisRepository = analysisRepository;
         this.storageService = storageService;
         this.pdfService = pdfService;
+        this.habitService = habitService;
         this.objectMapper = objectMapper;
     }
 
@@ -70,6 +75,21 @@ public class AnalysisController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         return toDto(owned(id, principal));
+    }
+
+    @PostMapping("/{id}/sync-routine")
+    public java.util.Map<String, Object> syncRoutine(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        Analysis analysis = owned(id, principal);
+        HabitService.RoutineSyncResult sync = habitService.syncRoutineFromAnalysis(
+                principal.getId(), analysis.getId(), parseResult(analysis));
+        return java.util.Map.of(
+                "added", sync.added(),
+                "updated", sync.updated(),
+                "paused", sync.paused()
+        );
     }
 
     @DeleteMapping("/{id}")

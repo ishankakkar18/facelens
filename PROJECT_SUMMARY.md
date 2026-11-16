@@ -45,7 +45,11 @@ Password: password123
 - PDF export of any saved report
 
 ### Daily tracker
-- AI suggestions automatically become habits when an analysis is saved
+- **Fully image-driven:** the latest scan's AM/PM/weekly routine becomes the tracker automatically
+- Habits are grouped by **Morning / Evening / Weekly / Anytime**
+- Each habit carries a short **reason** from the analysis ("Focus now" / clinical impression)
+- New routine steps are added, matching steps refreshed, and removed routine steps are **paused**
+  (never deleted); custom habits are untouched
 - Day-wise checklist with completion tracking
 - Streak and completion-rate summary
 - 7-day completion chart
@@ -299,6 +303,8 @@ The deployed system was tested end-to-end:
 - 3-photo validation: `422` with per-angle `photo_errors` when photos are duplicated
 - New report UI: Overview / Acne & marks / Routine / What to use tabs verified with a realistic
   moderate-acne report; "Add this routine to my tracker" created 9 habits successfully
+- Image-driven routine sync: verified add / refresh / pause behavior; habits stored with
+  `time_of_day` and a reason, and the tracker UI grouped them by Morning / Evening / Weekly / Anytime
 - New AI prompt returns acne grade, scarring risk, PIH/PIE, clinical impression, biggest issue/win,
   reality check, photo quality, confidence, and an AM/PM/weekly routine
 - Result page rendering: acne severity, acne marks, hydration, pores, clinical notes, and

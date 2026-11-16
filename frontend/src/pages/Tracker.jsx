@@ -6,6 +6,13 @@ import { formatDate, todayISO } from '../lib/format'
 
 const CATEGORIES = ['skincare', 'grooming', 'lifestyle', 'professional']
 
+const TIME_GROUPS = [
+  { key: 'morning', label: 'Morning', icon: 'sparkles' },
+  { key: 'evening', label: 'Evening', icon: 'heart' },
+  { key: 'weekly', label: 'Weekly', icon: 'calendar' },
+  { key: 'anytime', label: 'Anytime', icon: 'check' },
+]
+
 function weekdayNarrow(iso) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { weekday: 'narrow' })
 }
@@ -26,6 +33,7 @@ export default function Tracker() {
   const [busy, setBusy] = useState(null)
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('skincare')
+  const [timeOfDay, setTimeOfDay] = useState('morning')
   const [adding, setAdding] = useState(false)
   const [showInactive, setShowInactive] = useState(false)
 
@@ -67,6 +75,18 @@ export default function Tracker() {
     return days
   }, [logs, activeHabits.length])
 
+  const grouped = useMemo(() => {
+    const map = {}
+    for (const item of summary?.habits || []) {
+      const key = item.habit.time_of_day || 'anytime'
+      map[key] = map[key] || []
+      map[key].push(item)
+    }
+    return TIME_GROUPS.map((group) => ({ ...group, items: map[group.key] || [] })).filter(
+      (group) => group.items.length,
+    )
+  }, [summary])
+
   async function toggleHabit(habit) {
     if (!summary) return
     const item = summary.habits.find((h) => h.habit.id === habit.id)
@@ -87,7 +107,7 @@ export default function Tracker() {
     setAdding(true)
     setError('')
     try {
-      await trackerApi.createHabit(title.trim(), category)
+      await trackerApi.createHabit(title.trim(), category, timeOfDay)
       setTitle('')
       await load()
     } catch (err) {
@@ -191,36 +211,62 @@ export default function Tracker() {
               description="Add a habit on the right, or save an analysis to auto-create a routine."
             />
           ) : (
-            <ul className="space-y-2">
-              {summary?.habits.map((item) => (
-                <li key={item.habit.id}>
-                  <button
-                    onClick={() => toggleHabit(item.habit)}
-                    disabled={busy === item.habit.id}
-                    className="flex w-full items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 text-left transition hover:bg-slate-100 disabled:opacity-60"
-                  >
-                    <span
-                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${
-                        item.completed ? 'bg-brand-600 text-white' : 'bg-white ring-1 ring-slate-300'
-                      }`}
-                    >
-                      {item.completed && <Icon name="check" className="h-4 w-4" />}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span
-                        className={`block truncate text-sm font-medium ${
-                          item.completed ? 'text-slate-400 line-through' : 'text-slate-800'
-                        }`}
-                      >
-                        {item.habit.title}
+            <div className="space-y-5">
+              {grouped.map((group) => {
+                const done = group.items.filter((item) => item.completed).length
+                return (
+                  <div key={group.key}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                        <Icon name={group.icon} className="h-3.5 w-3.5" />
                       </span>
-                      <span className="text-xs capitalize text-slate-400">{item.habit.category}</span>
-                    </span>
-                    {busy === item.habit.id && <Spinner className="h-4 w-4 text-slate-400" />}
-                  </button>
-                </li>
-              ))}
-            </ul>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {group.label}
+                      </p>
+                      <Badge tone="slate">
+                        {done}/{group.items.length}
+                      </Badge>
+                    </div>
+                    <ul className="space-y-2">
+                      {group.items.map((item) => (
+                        <li key={item.habit.id}>
+                          <button
+                            onClick={() => toggleHabit(item.habit)}
+                            disabled={busy === item.habit.id}
+                            title={item.habit.reason || undefined}
+                            className="flex w-full items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 text-left transition hover:bg-slate-100 disabled:opacity-60"
+                          >
+                            <span
+                              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${
+                                item.completed ? 'bg-brand-600 text-white' : 'bg-white ring-1 ring-slate-300'
+                              }`}
+                            >
+                              {item.completed && <Icon name="check" className="h-4 w-4" />}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span
+                                className={`block truncate text-sm font-medium ${
+                                  item.completed ? 'text-slate-400 line-through' : 'text-slate-800'
+                                }`}
+                              >
+                                {item.habit.title}
+                              </span>
+                              <span className="flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
+                                <span className="capitalize">{item.habit.category}</span>
+                                {item.habit.reason && (
+                                  <span className="truncate">· {item.habit.reason}</span>
+                                )}
+                              </span>
+                            </span>
+                            {busy === item.habit.id && <Spinner className="h-4 w-4 text-slate-400" />}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              })}
+            </div>
           )}
         </div>
 
@@ -239,6 +285,13 @@ export default function Tracker() {
                 {CATEGORIES.map((option) => (
                   <option key={option} value={option}>
                     {option[0].toUpperCase() + option.slice(1)}
+                  </option>
+                ))}
+              </select>
+              <select className="input" value={timeOfDay} onChange={(event) => setTimeOfDay(event.target.value)}>
+                {TIME_GROUPS.map((group) => (
+                  <option key={group.key} value={group.key}>
+                    {group.label}
                   </option>
                 ))}
               </select>
@@ -269,7 +322,8 @@ export default function Tracker() {
                       {habit.title}
                     </p>
                     <p className="text-xs capitalize text-slate-400">
-                      {habit.category} · {habit.source === 'ai' ? 'from analysis' : 'custom'}
+                      {habit.category} · {habit.time_of_day || 'anytime'} ·{' '}
+                      {habit.source === 'ai' ? 'from analysis' : 'custom'}
                       {!habit.active && ' · inactive'}
                     </p>
                   </div>

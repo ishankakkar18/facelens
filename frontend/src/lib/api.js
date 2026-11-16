@@ -98,6 +98,7 @@ export const analysisApi = {
   list: (limit = 50, offset = 0) => request(`/api/analyses?limit=${limit}&offset=${offset}`),
   get: (id) => request(`/api/analyses/${id}`),
   remove: (id) => request(`/api/analyses/${id}`, { method: 'DELETE' }),
+  syncRoutine: (id) => request(`/api/analyses/${id}/sync-routine`, { method: 'POST' }),
   pdf: async (id) => {
     const token = getToken()
     const response = await fetch(`${API_BASE}/api/analyses/${id}/pdf`, {
@@ -120,7 +121,11 @@ export const analysisApi = {
 export const trackerApi = {
   summary: () => request('/api/tracker/summary'),
   habits: (includeInactive = false) => request(`/api/tracker/habits?include_inactive=${includeInactive}`),
-  createHabit: (title, category) => request('/api/tracker/habits', { method: 'POST', body: { title, category } }),
+  createHabit: (title, category, timeOfDay = 'anytime') =>
+    request('/api/tracker/habits', {
+      method: 'POST',
+      body: { title, category, time_of_day: timeOfDay },
+    }),
   updateHabit: (id, patch) => request(`/api/tracker/habits/${id}`, { method: 'PATCH', body: patch }),
   removeHabit: (id) => request(`/api/tracker/habits/${id}`, { method: 'DELETE' }),
   logs: (from, to) => request(`/api/tracker/logs?from=${from}&to=${to}`),

@@ -14,16 +14,20 @@ public final class TrackerDtos {
 
     public record HabitCreateRequest(
             @NotBlank String title,
-            @Pattern(regexp = "^(skincare|grooming|lifestyle|professional)$") String category
+            @Pattern(regexp = "^(skincare|grooming|lifestyle|professional)$") String category,
+            @Pattern(regexp = "^(morning|evening|weekly|anytime)$") String timeOfDay
     ) {
         public HabitCreateRequest {
             if (category == null || category.isBlank()) {
                 category = "skincare";
             }
+            if (timeOfDay == null || timeOfDay.isBlank()) {
+                timeOfDay = "anytime";
+            }
         }
     }
 
-    public record HabitUpdateRequest(String title, String category, Boolean active) {
+    public record HabitUpdateRequest(String title, String category, String timeOfDay, Boolean active) {
     }
 
     public record HabitDto(
@@ -32,6 +36,8 @@ public final class TrackerDtos {
             String category,
             String source,
             Long sourceAnalysisId,
+            String timeOfDay,
+            String reason,
             boolean active,
             Instant createdAt
     ) {

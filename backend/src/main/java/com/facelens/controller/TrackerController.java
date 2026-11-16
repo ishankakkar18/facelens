@@ -73,6 +73,7 @@ public class TrackerController {
         habit.setUserId(principal.getId());
         habit.setTitle(request.title().trim());
         habit.setCategory(request.category());
+        habit.setTimeOfDay(request.timeOfDay());
         habit.setSource("custom");
         habitRepository.save(habit);
         return toHabitDto(habit);
@@ -96,6 +97,12 @@ public class TrackerController {
                 throw new ApiException(400, "Invalid habit category.");
             }
             habit.setCategory(request.category());
+        }
+        if (request.timeOfDay() != null) {
+            if (!Set.of("morning", "evening", "weekly", "anytime").contains(request.timeOfDay())) {
+                throw new ApiException(400, "Invalid time of day.");
+            }
+            habit.setTimeOfDay(request.timeOfDay());
         }
         if (request.active() != null) {
             habit.setActive(request.active());
@@ -295,6 +302,8 @@ public class TrackerController {
                 habit.getCategory(),
                 habit.getSource(),
                 habit.getSourceAnalysisId(),
+                habit.getTimeOfDay(),
+                habit.getReason(),
                 habit.isActive(),
                 habit.getCreatedAt()
         );

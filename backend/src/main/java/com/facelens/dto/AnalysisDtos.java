@@ -15,7 +15,10 @@ public final class AnalysisDtos {
             String frontImageUrl,
             String rightImageUrl,
             String leftImageUrl,
-            Map<String, Object> result
+            Map<String, Object> result,
+            int habitsAdded,
+            int habitsUpdated,
+            int habitsPaused
     ) {
     }
 

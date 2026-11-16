@@ -26,6 +26,12 @@ public class Habit {
     @Column(name = "source_analysis_id")
     private Long sourceAnalysisId;
 
+    @Column(name = "time_of_day", length = 20)
+    private String timeOfDay = "anytime";
+
+    @Column(length = 500)
+    private String reason;
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -85,6 +91,22 @@ public class Habit {
 
     public void setSourceAnalysisId(Long sourceAnalysisId) {
         this.sourceAnalysisId = sourceAnalysisId;
+    }
+
+    public String getTimeOfDay() {
+        return timeOfDay;
+    }
+
+    public void setTimeOfDay(String timeOfDay) {
+        this.timeOfDay = timeOfDay;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
     }
 
     public boolean isActive() {

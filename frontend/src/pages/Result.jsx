@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import Icon from '../components/Icons'
 import { Alert, Badge, EmptyState, PageHeader, Spinner } from '../components/UI'
-import { analysisApi, imageUrl, trackerApi } from '../lib/api'
+import { analysisApi, imageUrl } from '../lib/api'
 import { formatDateTime } from '../lib/format'
 
 const TABS = [
@@ -195,27 +195,18 @@ export default function Result() {
   const ingredients = result?.suggestions?.ingredients || []
   const professional = result?.suggestions?.professional || []
 
-  async function addRoutineToTracker() {
-    if (!routine) return
+  async function syncRoutine() {
+    if (!data?.id) {
+      setAddError('Save this analysis to your history first, then sync the routine.')
+      return
+    }
     setAdding(true)
     setAddError('')
     setAddMessage('')
     try {
-      const existing = await trackerApi.habits(true)
-      const titles = new Set(existing.map((habit) => habit.title.trim().toLowerCase()))
-      const steps = [...(routine.am || []), ...(routine.pm || []), ...(routine.weekly || [])]
-      let addedCount = 0
-      for (const step of steps) {
-        const title = String(step || '').trim()
-        if (!title || titles.has(title.toLowerCase())) continue
-        await trackerApi.createHabit(title.slice(0, 255), 'skincare')
-        titles.add(title.toLowerCase())
-        addedCount += 1
-      }
+      const sync = await analysisApi.syncRoutine(data.id)
       setAddMessage(
-        addedCount
-          ? `Added ${addedCount} routine steps to your daily tracker.`
-          : 'Those routine steps are already in your tracker.',
+        `Tracker synced: ${sync.added} added, ${sync.updated} refreshed, ${sync.paused} paused.`,
       )
     } catch (err) {
       setAddError(err.message)
@@ -300,6 +291,13 @@ export default function Result() {
               </p>
             )}
           </section>
+
+          {data.saved && (data.habits_added || data.habits_updated || data.habits_paused) ? (
+            <Alert type="success">
+              Tracker updated from this scan: {data.habits_added || 0} added,{' '}
+              {data.habits_updated || 0} refreshed, {data.habits_paused || 0} paused.
+            </Alert>
+          ) : null}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="card border-l-4 border-rose-400 p-5">
@@ -487,14 +485,14 @@ export default function Result() {
                 <button
                   type="button"
                   className="btn-primary w-full"
-                  onClick={addRoutineToTracker}
-                  disabled={adding}
+                  onClick={syncRoutine}
+                  disabled={adding || !data.id}
                 >
                   {adding ? <Spinner /> : <Icon name="plus" className="h-4 w-4" />}
-                  Add this routine to my tracker
+                  Sync routine to tracker
                 </button>
                 <p className="mt-2 text-center text-xs text-slate-500">
-                  Creates daily habits from the morning, evening, and weekly steps.
+                  Uses this report's morning, evening, and weekly steps to update your tracker.
                 </p>
               </div>
             </>
